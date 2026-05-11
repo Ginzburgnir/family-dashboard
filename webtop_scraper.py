@@ -65,33 +65,86 @@ async def login(page, username, password):
             }
         """)
         print("    edu btn: dispatchEvent fallback")
-    # המתן שהדף edu.gov ייטען
+    # שמור screenshot לפני ניווט
+    await page.screenshot(path="/tmp/before_edu.png")
+
+    # המתן לניווט לדף edu.gov
     try:
-        await page.wait_for_url(lambda u: "edu.gov" in u or "lgn" in u, timeout=10000)
-        print(f"    edu.gov page: {page.url}")
+        await page.wait_for_url(lambda u: "edu.gov" in u or "lgn" in u, timeout=12000)
+        print(f"    navigated to: {page.url}")
     except Exception:
-        print(f"    waiting for edu.gov... current: {page.url}")
-        await page.wait_for_timeout(3000)
+        print(f"    no navigation yet, URL: {page.url}")
+        # נסה dispatchEvent — טריגר Angular
+        await page.evaluate("""
+            () => {
+                const edu = [...document.querySelectorAll('button')].find(
+                    b => b.textContent.includes('משרד החינוך'));
+                if (edu) {
+                    ['mousedown','mouseup','click'].forEach(ev =>
+                        edu.dispatchEvent(new MouseEvent(ev, {bubbles:true, cancelable:true})));
+                }
+            }
+        """)
+        try:
+            await page.wait_for_url(lambda u: "edu.gov" in u or "lgn" in u, timeout=10000)
+            print(f"    navigated (2nd try): {page.url}")
+        except Exception:
+            print(f"    still on: {page.url}")
+            # נסה ניווט ישיר לURL שנמצא בכפתור
+            href = await page.evaluate("""
+                () => {
+                    const a = document.querySelector('a[href*="edu.gov"], a[href*="lgn"]');
+                    return a ? a.href : null;
+                }
+            """)
+            if href:
+                print(f"    direct nav to: {href}")
+                await page.goto(href, wait_until="domcontentloaded", timeout=15000)
+            else:
+                await page.wait_for_timeout(3000)
 
-    # המתן שה-userName field יהיה זמין
+    await page.screenshot(path="/tmp/edu_page.png")
+    print(f"    edu page URL: {page.url}")
+
+    # מלא פרטים
     try:
-        await page.wait_for_selector("#userName", state="visible", timeout=15000)
+        await page.wait_for_selector("#userName", state="attached", timeout=20000)
     except Exception:
-        await page.wait_for_timeout(3000)
-    print(f"    filling login form on: {page.url}")
+        # נסה סלקטורים חלופיים
+        for sel in ['input[type="text"]', 'input[name*="user"]', 'input[id*="user"]']:
+            try:
+                await page.wait_for_selector(sel, state="visible", timeout=3000)
+                break
+            except Exception:
+                continue
 
-    await page.fill("#userName", username)
-    await page.click("#password")
-    await page.wait_for_timeout(500)
-    await page.type("#password", password)
+    print(f"    filling form...")
+    # מלא username
+    try:
+        await page.fill("#userName", username)
+    except Exception:
+        await page.fill('input[type="text"]:visible', username)
 
-    # שלח את הטופס
+    # מלא password — click קודם להסרת readonly
+    try:
+        await page.click("#password")
+        await page.wait_for_timeout(400)
+        await page.type("#password", password)
+    except Exception:
+        pwd = await page.query_selector('input[type="password"]:visible')
+        if pwd:
+            await pwd.click()
+            await page.wait_for_timeout(400)
+            await pwd.type(password)
+
+    # שלח
     try:
         await page.click('button[type="submit"]', timeout=8000)
     except Exception:
-        await page.evaluate("document.querySelector('form').submit()")
+        await page.evaluate("document.querySelector('form') && document.querySelector('form').submit()")
 
     await page.wait_for_timeout(6000)
+    await page.screenshot(path="/tmp/after_login.png")
     ok = BASE in page.url and "login" not in page.url
     print(f"  login {'OK' if ok else 'FAIL'}: {page.url}")
     return ok
