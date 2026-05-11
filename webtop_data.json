@@ -1,0 +1,15 @@
+{
+  "students": [
+    {
+      "name": "יובל",
+      "weekly_plan": {},
+      "lesson_events": [],
+      "homework": [],
+      "messages": [],
+      "last_updated": "2026-05-11T17:35:07.423033",
+      "error": "Page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"הזדהות משרד החינוך\\\")\")\n"
+    }
+  ],
+  "generated_at": "2026-05-11T17:35:06.905123",
+  "status": "ok"
+}
