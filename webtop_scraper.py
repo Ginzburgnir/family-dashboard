@@ -106,45 +106,82 @@ async def login(page, username, password):
     await page.screenshot(path="/tmp/edu_page.png")
     print(f"    edu page URL: {page.url}")
 
-    # מלא פרטים
-    try:
-        await page.wait_for_selector("#userName", state="attached", timeout=20000)
-    except Exception:
-        # נסה סלקטורים חלופיים
-        for sel in ['input[type="text"]', 'input[name*="user"]', 'input[id*="user"]']:
-            try:
-                await page.wait_for_selector(sel, state="visible", timeout=3000)
+    # שמור HTML לאבחון — יועלה ל-repo
+    html = await page.content()
+    with open("edu_debug.html", "w", encoding="utf-8") as f:
+        f.write(html)
+
+    # דיאגנוסטיקה
+    diag = await page.evaluate("""
+        () => ({
+            url: location.href,
+            title: document.title,
+            allInputs: [...document.querySelectorAll('input')].map(i => ({
+                id: i.id, name: i.name, type: i.type,
+                visible: i.offsetParent !== null,
+                display: getComputedStyle(i).display,
+                visibility: getComputedStyle(i).visibility
+            })),
+            bodyText: document.body ? document.body.innerText.substring(0, 200) : 'no body'
+        })
+    """)
+    print(f"    title: {diag['title']}")
+    print(f"    inputs: {diag['allInputs']}")
+    print(f"    body: {diag['bodyText'][:150]}")
+
+    # נסה למלא — בלי תנאי visibility
+    await page.wait_for_timeout(3000)
+
+    # username
+    filled_user = False
+    for sel in ["#userName", 'input[name="Ecom_User_ID"]',
+                'input[type="text"]', 'input[id*="user" i]',
+                'input:not([type="hidden"]):not([type="password"]):not([type="submit"])']:
+        try:
+            el = await page.query_selector(sel)
+            if el:
+                await el.focus()
+                await page.wait_for_timeout(200)
+                await el.fill(username)
+                print(f"    username filled via: {sel}")
+                filled_user = True
                 break
-            except Exception:
-                continue
+        except Exception:
+            continue
 
-    print(f"    filling form...")
-    # מלא username
-    try:
-        await page.fill("#userName", username)
-    except Exception:
-        await page.fill('input[type="text"]:visible', username)
+    # password
+    filled_pass = False
+    for sel in ["#password", 'input[name="Ecom_Password"]', 'input[type="password"]']:
+        try:
+            el = await page.query_selector(sel)
+            if el:
+                await el.focus()
+                await page.wait_for_timeout(300)
+                # הסר readonly
+                await page.evaluate("el => el.removeAttribute('readonly')", el)
+                await el.type(password)
+                print(f"    password typed via: {sel}")
+                filled_pass = True
+                break
+        except Exception:
+            continue
 
-    # מלא password — click קודם להסרת readonly
-    try:
-        await page.click("#password")
-        await page.wait_for_timeout(400)
-        await page.type("#password", password)
-    except Exception:
-        pwd = await page.query_selector('input[type="password"]:visible')
-        if pwd:
-            await pwd.click()
-            await page.wait_for_timeout(400)
-            await pwd.type(password)
+    if not filled_user or not filled_pass:
+        print(f"    WARNING: filled_user={filled_user}, filled_pass={filled_pass}")
 
     # שלח
     try:
-        await page.click('button[type="submit"]', timeout=8000)
+        await page.click('input[type="submit"]', timeout=5000)
+        print("    submit: input[type=submit]")
     except Exception:
-        await page.evaluate("document.querySelector('form') && document.querySelector('form').submit()")
+        try:
+            await page.click('button[type="submit"]', timeout=5000)
+            print("    submit: button[type=submit]")
+        except Exception:
+            await page.keyboard.press("Enter")
+            print("    submit: Enter key")
 
     await page.wait_for_timeout(6000)
-    await page.screenshot(path="/tmp/after_login.png")
     ok = BASE in page.url and "login" not in page.url
     print(f"  login {'OK' if ok else 'FAIL'}: {page.url}")
     return ok
