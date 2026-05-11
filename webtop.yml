@@ -1,0 +1,43 @@
+name: Webtop Scraper
+
+on:
+  schedule:
+    - cron: '0 3 * * *'    # 06:00 Israel
+    - cron: '0 10 * * *'   # 13:00 Israel
+    - cron: '0 14 * * *'   # 17:00 Israel
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        run: |
+          pip install playwright
+          python -m playwright install chromium --with-deps
+
+      - name: Scrape
+        env:
+          YUVAL_USER: ${{ secrets.YUVAL_USER }}
+          YUVAL_PASS: ${{ secrets.YUVAL_PASS }}
+          RON_USER:   ${{ secrets.RON_USER }}
+          RON_PASS:   ${{ secrets.RON_PASS }}
+        run: |
+          python webtop_scraper.py \
+            --u1 "$YUVAL_USER" --p1 "$YUVAL_PASS" --n1 יובל \
+            --u2 "$RON_USER"   --p2 "$RON_PASS"   --n2 רון \
+            --headless
+
+      - name: Push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add webtop_data.json
+          git diff --staged --quiet || git commit -m "webtop update $(date -u '+%H:%M')"
+          git push
