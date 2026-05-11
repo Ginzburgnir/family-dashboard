@@ -65,13 +65,33 @@ async def login(page, username, password):
             }
         """)
         print("    edu btn: dispatchEvent fallback")
-    await page.wait_for_timeout(4000)
+    # המתן שהדף edu.gov ייטען
+    try:
+        await page.wait_for_url(lambda u: "edu.gov" in u or "lgn" in u, timeout=10000)
+        print(f"    edu.gov page: {page.url}")
+    except Exception:
+        print(f"    waiting for edu.gov... current: {page.url}")
+        await page.wait_for_timeout(3000)
+
+    # המתן שה-userName field יהיה זמין
+    try:
+        await page.wait_for_selector("#userName", state="visible", timeout=15000)
+    except Exception:
+        await page.wait_for_timeout(3000)
+    print(f"    filling login form on: {page.url}")
+
     await page.fill("#userName", username)
     await page.click("#password")
-    await page.wait_for_timeout(400)
+    await page.wait_for_timeout(500)
     await page.type("#password", password)
-    await page.click('button[type="submit"]')
-    await page.wait_for_timeout(5000)
+
+    # שלח את הטופס
+    try:
+        await page.click('button[type="submit"]', timeout=8000)
+    except Exception:
+        await page.evaluate("document.querySelector('form').submit()")
+
+    await page.wait_for_timeout(6000)
     ok = BASE in page.url and "login" not in page.url
     print(f"  login {'OK' if ok else 'FAIL'}: {page.url}")
     return ok
