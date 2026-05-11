@@ -43,21 +43,28 @@ async def login(page, username, password):
         except Exception:
             pass
 
-    # לחץ הזדהות משרד החינוך — עם JS כדי לעקוף disabled
-    clicked = await page.evaluate("""
-        () => {
-            const btns = [...document.querySelectorAll('button')];
-            const edu = btns.find(b => b.textContent.includes('משרד החינוך') || b.textContent.includes('הזדהות'));
-            if (edu) {
-                edu.removeAttribute('disabled');
-                edu.classList.remove('mat-button-disabled');
-                edu.click();
-                return edu.textContent.trim().substring(0, 30);
-            }
-            return null;
-        }
+    # הסר disabled מכל הכפתורים
+    await page.evaluate("""
+        () => document.querySelectorAll('button[disabled],button.mat-button-disabled').forEach(b => {
+            b.removeAttribute('disabled');
+            b.classList.remove('mat-button-disabled');
+        })
     """)
-    print(f"    edu btn: {clicked}")
+    await page.wait_for_timeout(500)
+
+    # לחץ הזדהות משרד החינוך — force=True מתעלם מ-disabled
+    try:
+        await page.click('button:has-text("הזדהות משרד החינוך")', force=True, timeout=8000)
+        print("    edu btn: force click OK")
+    except Exception as e:
+        print(f"    edu btn force failed: {e}")
+        await page.evaluate("""
+            () => {
+                const edu = [...document.querySelectorAll('button')].find(b => b.textContent.includes('משרד החינוך'));
+                if (edu) edu.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+            }
+        """)
+        print("    edu btn: dispatchEvent fallback")
     await page.wait_for_timeout(4000)
     await page.fill("#userName", username)
     await page.click("#password")
