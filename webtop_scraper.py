@@ -21,13 +21,43 @@ async def wait_angular(page, timeout=15000):
 
 async def login(page, username, password):
     await page.goto(BASE + "/account/login", wait_until="domcontentloaded", timeout=30000)
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(3000)
+
+    # אשר cookies (מאפשר את הכפתורים)
     try:
-        await page.click('button:has-text("אשר cookies")', timeout=4000)
-        await page.wait_for_timeout(1500)
+        await page.click('button:has-text("אשר cookies")', timeout=6000)
+        await page.wait_for_timeout(2000)
+        print("    cookies accepted")
     except Exception:
-        pass
-    await page.click('button:has-text("הזדהות משרד החינוך")')
+        # נסה JS לאשר
+        try:
+            await page.evaluate("""
+                () => {
+                    const btns = [...document.querySelectorAll('button')];
+                    const cb = btns.find(b => b.textContent.includes('אשר') || b.textContent.includes('cookie'));
+                    if (cb) { cb.click(); return true; }
+                    return false;
+                }
+            """)
+            await page.wait_for_timeout(2000)
+        except Exception:
+            pass
+
+    # לחץ הזדהות משרד החינוך — עם JS כדי לעקוף disabled
+    clicked = await page.evaluate("""
+        () => {
+            const btns = [...document.querySelectorAll('button')];
+            const edu = btns.find(b => b.textContent.includes('משרד החינוך') || b.textContent.includes('הזדהות'));
+            if (edu) {
+                edu.removeAttribute('disabled');
+                edu.classList.remove('mat-button-disabled');
+                edu.click();
+                return edu.textContent.trim().substring(0, 30);
+            }
+            return null;
+        }
+    """)
+    print(f"    edu btn: {clicked}")
     await page.wait_for_timeout(4000)
     await page.fill("#userName", username)
     await page.click("#password")
