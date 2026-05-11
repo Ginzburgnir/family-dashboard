@@ -6,10 +6,10 @@
       "lesson_events": [],
       "homework": [],
       "messages": [],
-      "last_updated": "2026-05-11T17:59:38.848920",
-      "error": "Page.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"input[type=\\\"text\\\"]:visible\")\n"
+      "last_updated": "2026-05-11T18:15:21.596108",
+      "error": "login_failed"
     }
   ],
-  "generated_at": "2026-05-11T17:59:37.430658",
+  "generated_at": "2026-05-11T18:15:21.062970",
   "status": "ok"
 }
