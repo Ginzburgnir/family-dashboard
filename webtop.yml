@@ -34,6 +34,14 @@ jobs:
             --u2 "$RON_USER"   --p2 "$RON_PASS"   --n2 רון \
             --headless
 
+      - name: Upload debug screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: /tmp/*.png
+          if-no-files-found: ignore
+
       - name: Push
         run: |
           git config user.name  "github-actions[bot]"
