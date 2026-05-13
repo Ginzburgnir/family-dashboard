@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Family Kitchen Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500&family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --bg-0: #0a0d14;
+  --bg-1: #0f1320;
+  --bg-2: #161b2c;
+  --ink-0: #f4f1ea;
+  --ink-1: rgba(244,241,234,.78);
+  --ink-2: rgba(244,241,234,.52);
+  --ink-3: rgba(244,241,234,.32);
+  --line: rgba(244,241,234,.08);
+  --line-2: rgba(244,241,234,.16);
+  --glass: rgba(255,255,255,.03);
+  --glass-2: rgba(255,255,255,.05);
+
+  --ron: #5aa9ff;
+  --ron-soft: rgba(90,169,255,.14);
+  --yuval: #ff8a6b;
+  --yuval-soft: rgba(255,138,107,.14);
+  --mom: #c89aff;
+  --mom-soft: rgba(200,154,255,.14);
+  --dad: #7be0a6;
+  --dad-soft: rgba(123,224,166,.14);
+
+  --warn: #ffb45c;
+  --good: #7be0a6;
+
+  --orb-a: 92,148,255;
+  --orb-b: 255,138,107;
+}
+[data-tod="morning"] { --orb-a: 255,168,108; --orb-b: 255,210,140; }
+[data-tod="day"]     { --orb-a: 92,148,255;  --orb-b: 138,210,255; }
+[data-tod="sunset"]  { --orb-a: 255,108,138; --orb-b: 255,168,108; }
+[data-tod="night"]   { --orb-a: 88,124,255;  --orb-b: 168,124,255; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #000; color: var(--ink-0); overflow: hidden; }
+body { font-family: 'Heebo', system-ui, sans-serif; }
+
+#stage { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; }
+#scaler {
+  width: 1180px; height: 820px;
+  transform-origin: center center;
+  position: relative;
+}
+#root { width: 100%; height: 100%; display: block; }
+
+.app {
+  width: 100%; height: 100%;
+  position: relative;
+  background:
+    radial-gradient(900px 600px at 85% -10%, rgba(var(--orb-a),.22), transparent 60%),
+    radial-gradient(800px 500px at -10% 110%, rgba(var(--orb-b),.18), transparent 55%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 50%, var(--bg-0));
+  direction: rtl;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Heebo', sans-serif;
+}
+
+.orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: .55;
+  pointer-events: none; animation: drift 28s ease-in-out infinite alternate;
+}
+.orb.a { width: 480px; height: 480px; left: -100px; top: -160px; background: rgba(var(--orb-a),.5); }
+.orb.b { width: 380px; height: 380px; right: -80px; bottom: -140px; background: rgba(var(--orb-b),.45); animation-duration: 36s; animation-direction: alternate-reverse; }
+@keyframes drift { to { transform: translate(50px, 30px) scale(1.08); } }
+
+.grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+}
+#scaler { transform-origin: center center; }
+#stage {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg, #0a0c12);
+  overflow: hidden;
+}
+
+.screen-wrap {
+  flex: 1; min-height: 0; position: relative;
+  padding: 28px 32px 12px;
+  overflow: hidden;
+}
+
+.card {
+  position: relative;
+  background: linear-gradient(180deg, var(--glass-2), var(--glass));
+  border: .5px solid var(--line-2);
+  border-radius: 20px;
+  padding: 18px 20px;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 20px 40px -20px rgba(0,0,0,.5);
+}
+.card-title {
+  font-size: 11px; font-weight: 600; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--ink-2); margin-bottom: 10px;
+}
+.card-en {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; letter-spacing: .14em; color: var(--ink-3);
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.card-head .card-title { margin-bottom: 0; }
+
+
+/* Override font-face to use Google Fonts */
+body, .app {
+  font-family: 'Frank Ruhl Libre', serif;
+}
+</style>
+</head>
+<body>
+
+<div id="stage"><div id="scaler"><div id="root"></div></div></div>
+
+<!-- React + Babel -->
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+<!-- ─── Real Data Loader ──────────────────────────────────────── -->
+<script>
+window.FAMILY_LOADING = true;
+
+async function loadFamilyData() {
+  const today = new Date();
+  const Y = today.getFullYear();
+  const M = String(today.getMonth()+1).padStart(2,'0');
+  const D = String(today.getDate()).padStart(2,'0');
+  const DOW = today.getDay(); // 0=Sun
+
+  const DAY_HEB = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const MON_HEB = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const DOW_EN  = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+  const data = {};
+
+  // ── 1. Hebrew date + Shabbat ────────────────────────────────
+  try {
+    const hc = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${Y}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`).then(r=>r.json());
+    data.date = {
+      dayHeb: 'יום ' + DAY_HEB[DOW],
+      hebDate: (hc.hd || '') + ' ב' + (hc.hm || '') + ' ' + (hc.hy || ''),
+      greg: `${DOW_EN[DOW]} · ${today.getDate()} ${MON_HEB[today.getMonth()].toUpperCase()} ${Y}`,
+    };
+
+    // Shabbat times (Shoham area, lat 31.9971 lon 34.9394, geoname Shoham)
+    const sh = await fetch(`https://www.hebcal.com/shabbat?cfg=json&geonameid=295721&m=50`).then(r=>r.json()); // geoname Rishon/central
+    let candleLight = '---', havdalah = '--:--', parasha = '', daysAway = 0;
+    if (sh.items) {
+      for (const item of sh.items) {
+        if (item.category === 'candles') candleLight = item.date ? item.date.slice(11,16) : '---';
+        if (item.category === 'havdalah') havdalah = item.date ? item.date.slice(11,16) : '---';
+        if (item.category === 'parashat') parasha = item.title || '';
+      }
+    }
+    // Days until Friday
+    const dToFri = ((5 - DOW + 7) % 7) || 7;
+    let todayIs = 'other';
+    if (DOW === 5) todayIs = 'friday';
+    else if (DOW === 6) todayIs = 'saturday';
+    else if (dToFri === 1) todayIs = 'friday_eve'; // Thursday night
+
+    data.shabbat = { candleLighting: candleLight, havdalah, parasha, daysAway: dToFri, todayIs };
+  } catch(e) {
+    console.warn('hebcal error', e);
+    data.date = {
+      dayHeb: 'יום ' + DAY_HEB[DOW],
+      hebDate: '',
+      greg: `${DOW_EN[DOW]} · ${today.getDate()} ${MON_HEB[today.getMonth()].toUpperCase()} ${Y}`,
+    };
+    data.shabbat = { candleLighting: '--:--', havdalah: '--:--', parasha: '', daysAway: 0, todayIs: 'other' };
+  }
+
+  // ── 2. Weather (Open-Meteo, Shoham) ─────────────────────────
+  try {
+    const w = await fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=31.9971&longitude=34.9394' +
+      '&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code' +
+      '&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset' +
+      '&timezone=Asia%2FJerusalem&forecast_days=3'
+    ).then(r=>r.json());
+
+    const wc = w.current;
+    const wd = w.daily;
+    const iconMap = (code) => {
+      if (code < 3) return 'sun';
+      if (code < 50) return 'cloud';
+      return 'rain';
+    };
+    const sunset = wd.sunset?.[0] ? wd.sunset[0].slice(11,16) : '--:--';
+    const sunrise = wd.sunrise?.[0] ? wd.sunrise[0].slice(11,16) : '--:--';
+
+    data.weather = {
+      nowC: Math.round(wc.temperature_2m),
+      feels: Math.round(wc.apparent_temperature),
+      humidity: Math.round(wc.relative_humidity_2m),
+      wind: Math.round(wc.wind_speed_10m),
+      icon: iconMap(wc.weather_code),
+      desc: wc.weather_code < 3 ? 'בהיר' : wc.weather_code < 50 ? 'מעונן' : 'גשום',
+      sunrise, sunset,
+      today: { hi: Math.round(wd.temperature_2m_max?.[0] || 0), lo: Math.round(wd.temperature_2m_min?.[0] || 0), icon: iconMap(wd.weather_code?.[0] || 0) },
+      tomorrow: { hi: Math.round(wd.temperature_2m_max?.[1] || 0), lo: Math.round(wd.temperature_2m_min?.[1] || 0), icon: iconMap(wd.weather_code?.[1] || 0) },
+    };
+  } catch(e) {
+    console.warn('weather error', e);
+    data.weather = { nowC: '--', feels: '--', humidity: '--', wind: '--', icon: 'sun', desc: '', sunrise: '--:--', sunset: '--:--', today: { hi: '--', lo: '--', icon: 'sun' }, tomorrow: { hi: '--', lo: '--', icon: 'sun' } };
+  }
+
+  // ── 3. Webtop data (kids school) ────────────────────────────
+  let webtop = null;
+  try {
+    webtop = await fetch('https://ginzburgnir.github.io/family-dashboard/webtop_data.json?t=' + Date.now()).then(r=>r.json());
+  } catch(e) {
+    console.warn('webtop error', e);
+  }
+
+  function mapKid(kidData, kidName, initial, grade, gradeEn) {
+    if (!kidData) {
+      return {
+        name: kidName, initial, grade, en: gradeEn,
+        now: null, next: [], homework: [],
+        test: null, lessonEvents: []
+      };
+    }
+
+    const nowHour = today.getHours() * 60 + today.getMinutes();
+    const todayDow = DOW; // 0=Sun
+
+    // Map weekly plan to today's schedule
+    const dayNames = { 'ראשון': 0, 'שני': 1, 'שלישי': 2, 'רביעי': 3, 'חמישי': 4, 'שישי': 5 };
+    const todayLessons = [];
+    if (kidData.weekly_plan) {
+      for (const dayPlan of kidData.weekly_plan) {
+        const dayNum = dayNames[dayPlan.day];
+        if (dayNum === todayDow) {
+          for (const lesson of (dayPlan.lessons || [])) {
+            todayLessons.push({
+              time: lesson.time || '',
+              name: lesson.subject || lesson.name || '',
+              room: lesson.room || lesson.teacher || '',
+            });
+          }
+        }
+      }
+    }
+
+    // Find current and next lessons
+    let nowLesson = null, nextLessons = [];
+    for (let i = 0; i < todayLessons.length; i++) {
+      const lesson = todayLessons[i];
+      const [h, m] = (lesson.time || '08:00').split(':').map(Number);
+      const lessonMin = (h || 0) * 60 + (m || 0);
+      if (Math.abs(lessonMin - nowHour) < 60 && !nowLesson) {
+        nowLesson = lesson;
+      } else if (lessonMin > nowHour && nextLessons.length < 3) {
+        nextLessons.push(lesson);
+      }
+    }
+
+    // If no lesson found for today, show first 4 lessons of today
+    if (!nowLesson && todayLessons.length > 0) {
+      nowLesson = todayLessons[0];
+      nextLessons = todayLessons.slice(1, 4);
+    }
+
+    // Map homework
+    const homework = (kidData.homework || []).slice(0, 5).map(hw => ({
+      subj: (hw.subject || hw.subj || '').slice(0, 6),
+      text: hw.description || hw.text || '',
+      done: false,
+    }));
+
+    // Map lesson events (discipline events)
+    const lessonEvents = (kidData.lesson_events || []).slice(0, 5).map(ev => ({
+      type: ev.type || '',
+      date: ev.date || '',
+      note: ev.note || ev.group || '',
+    }));
+
+    return {
+      name: kidName, initial, grade, en: gradeEn,
+      now: nowLesson,
+      next: nextLessons,
+      homework,
+      test: null,
+      lessonEvents,
+      weeklyPlan: kidData.weekly_plan || [],
+    };
+  }
+
+  // Build kids data
+  const students = (webtop && webtop.students) || {};
+  const yuvalKey = Object.keys(students).find(k => k.includes('יובל')) || 'יובל';
+  const ronKey = Object.keys(students).find(k => k.includes('רון')) || 'רון';
+
+  data.yuval = mapKid(students[yuvalKey], 'יובל', 'י', 'כיתה ב׳', 'GRADE 2');
+  data.ron   = mapKid(students[ronKey],   'רון',   'ר', 'כיתה ו׳', 'GRADE 6');
+
+  // ── 4. Week view (combine calendar + webtop) ─────────────
+  const weekDays = [];
+  const DAYS_HEB = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const DAYS_TAG = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+  // Start from last Sunday
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - DOW);
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+    const dayDow = d.getDay();
+    const isToday = d.toDateString() === today.toDateString();
+    const isPast = d < today && !isToday;
+    const isWeekend = dayDow === 5 || dayDow === 6;
+
+    // Build events for this day from webtop
+    const dayEvents = [];
+
+    // Add Shabbat candles on Friday
+    if (dayDow === 5 && data.shabbat.candleLighting !== '--:--') {
+      dayEvents.push({ tag: 'holiday', text: '✦ נרות ' + data.shabbat.candleLighting });
+    }
+
+    weekDays.push({
+      name: DAYS_HEB[dayDow],
+      tag: DAYS_TAG[dayDow],
+      num: d.getDate(),
+      today: isToday,
+      past: isPast,
+      weekend: isWeekend,
+      events: dayEvents,
+    });
+  }
+  data.week = weekDays;
+
+  // ── 5. Today events (from calendar/webtop) ───────────────
+  data.todayEvents = [];
+
+  // ── 6. Briefing ──────────────────────────────────────────
+  const hw_yuval = data.yuval.homework.filter(h => !h.done);
+  const hw_ron = data.ron.homework.filter(h => !h.done);
+  const briefing = [{ type: 'text', value: 'בוקר טוב. ' }];
+  if (hw_ron.length > 0) {
+    briefing.push({ type: 'ron', value: 'לרון ' + hw_ron.length + ' שיעורי בית' });
+    briefing.push({ type: 'text', value: '. ' });
+  }
+  if (hw_yuval.length > 0) {
+    briefing.push({ type: 'yuval', value: 'ליובל ' + hw_yuval.length + ' שיעורי בית' });
+    briefing.push({ type: 'text', value: '. ' });
+  }
+  if (briefing.length === 1) {
+    briefing.push({ type: 'text', value: 'יום נעים למשפחה!' });
+  }
+  data.briefing = briefing;
+
+  // ── 7. Upcoming events (static Israeli calendar) ─────────
+  data.events = [
+    { id: 'shavuot-vac', kind: 'vacation', name: 'חופשת שבועות', date: '21—24 במאי', daysAway: 9, icon: '☀', length: '4 ימים', _d: [2026,5,21] },
+    { id: 'shavuot', kind: 'holiday', name: 'שבועות', date: '22 במאי', daysAway: 10, icon: '🌾', _d: [2026,5,22] },
+    { id: 'summer', kind: 'vacation', name: 'חופש הגדול', date: '30 ביוני', daysAway: 49, icon: '☀', length: 'חודשיים', _d: [2026,6,30] },
+    { id: 'rosh-hashana', kind: 'holiday', name: 'ראש השנה', date: '12 בספטמבר', daysAway: 123, icon: '🍎', _d: [2026,9,12] },
+    { id: 'yom-kippur', kind: 'holiday', name: 'יום כיפור', date: '21 בספטמבר', daysAway: 132, icon: '✦', _d: [2026,9,21] },
+    { id: 'sukkot', kind: 'vacation', name: 'חופשת סוכות', date: '26 בספט׳', daysAway: 137, icon: '◇', length: '9 ימים', _d: [2026,9,26] },
+  ].map(e => {
+    const target = new Date(e._d[0], e._d[1]-1, e._d[2]);
+    const diff = Math.ceil((target - today) / (1000*60*60*24));
+    return { ...e, daysAway: Math.max(0, diff) };
+  }).filter(e => e.daysAway >= 0);
+  data.events.sort((a,b) => a.daysAway - b.daysAway);
+
+  // Next holiday for holiday card
+  const nextHol = data.events.find(e => e.kind === 'holiday' || e.kind === 'vacation');
+  data.holiday = nextHol ? {
+    name: nextHol.name, nameEn: nextHol.name.toUpperCase(),
+    daysAway: nextHol.daysAway, date: nextHol.date, icon: nextHol.icon,
+    mood: nextHol.daysAway <= 3 ? 'very-soon' : nextHol.daysAway <= 14 ? 'soon' : 'far',
+  } : null;
+
+  // ── 8. History fact ──────────────────────────────────────
+  try {
+    const wikiUrl = `https://he.wikipedia.org/api/rest_v1/page/summary/${M}_${D}`;
+    const wiki = await fetch(wikiUrl).then(r=>r.json());
+    data.history = {
+      year: '',
+      text: wiki.extract ? wiki.extract.slice(0, 200) : 'יום מיוחד בהיסטוריה',
+    };
+  } catch(e) {
+    data.history = { year: '', text: 'יום מיוחד בהיסטוריה.' };
+  }
+
+  // ── 9. Static data ───────────────────────────────────────
+  data.presence = [
+    { name: 'אמא', initial: 'מ', home: false },
+    { name: 'אבא', initial: 'ב', home: true },
+    { name: 'רון', initial: 'ר', home: false },
+    { name: 'יובל', initial: 'י', home: false },
+  ];
+  data.notes = [
+    { id: 1, color: 'fam', from: 'משפחה', text: 'לוח המשפחה — ברוכים הבאים! 🏠', when: '', x: 30, y: 20, rot: -2, pinned: true },
+  ];
+  data.photos = [
+    { caption: 'משפחה', loc: 'הבית', grad: 'linear-gradient(135deg, #1e3a5f 0%, #4a7ba6 50%, #f4c95d 100%)' },
+    { caption: 'חופשה', loc: 'ישראל', grad: 'linear-gradient(180deg, #f7d794 0%, #f5b461 50%, #4a90b8 100%)' },
+  ];
+  data.shopping = [];
+  data.recipes = [];
+  data.recipeCats = [];
+
+  window.FAMILY = data;
+  window.FAMILY_LOADING = false;
+  console.log('✅ Family data loaded', data);
+}
+
+// Load data and then trigger React render
+loadFamilyData().catch(e => {
+  console.error('Data load failed', e);
+  window.FAMILY_LOADING = false;
+});
+</script>
+
+<!-- ─── App Components (Babel JSX) ───────────────────────────── -->
+<script type="text/babel" data-presets="react">
+
+// tweaks-panel.jsx
+// Reusable Tweaks shell + form-control helpers.
+//
+// Owns the host protocol (listens for __activate_edit_mode / __deactivate_edit_mode,
+// posts __edit_mode_available / __edit_mode_set_keys / __edit_mode_dismissed) so
+// individual prototypes don't re-roll it. Ships a consistent set of controls so you
+// don't hand-draw <input type="range">, segmented radios, steppers, etc.
+//
+// Usage (in an HTML file that loads React + Babel):
+//
+//   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+//     "primaryColor": "#D97757",
+//     "palette": ["#D97757", "#29261b", "#f6f4ef"],
+//     "fontSize": 16,
+//     "density": "regular",
+//     "dark": false
+//   }/*EDITMODE-END*/;
+//
+//   function App() {
+//     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+//     return (
+//       <div style={{ fontSize: t.fontSize, color: t.primaryColor }}>
+//         Hello
+//         <TweaksPanel>
+//           <TweakSection label="Typography" />
+//           <TweakSlider label="Font size" value={t.fontSize} min={10} max={32} unit="px"
+//                        onChange={(v) => setTweak('fontSize', v)} />
+//           <TweakRadio  label="Density" value={t.density}
+//                        options={['compact', 'regular', 'comfy']}
+//                        onChange={(v) => setTweak('density', v)} />
+//           <TweakSection label="Theme" />
+//           <TweakColor  label="Primary" value={t.primaryColor}
+//                        options={['#D97757', '#2A6FDB', '#1F8A5B', '#7A5AE0']}
+//                        onChange={(v) => setTweak('primaryColor', v)} />
+//           <TweakColor  label="Palette" value={t.palette}
+//                        options={[['#D97757', '#29261b', '#f6f4ef'],
+//                                  ['#475569', '#0f172a', '#f1f5f9']]}
+//                        onChange={(v) => setTweak('palette', v)} />
+//           <TweakToggle label="Dark mode" value={t.dark}
+//                        onChange={(v) => setTweak('dark', v)} />
+//         </TweaksPanel>
+//       </div>
+//     );
+//   }
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+
+  .twk-field{appearance:none;width:100%;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  select.twk-field{padding-right:22px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(0,0,0,.5)' d='M0 0h10L5 6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center}
+
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+    background:#fff;border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg.dragging .twk-seg-thumb{transition:none}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px;line-height:1.2;
+    overflow-wrap:anywhere}
+
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+
+  .twk-num{display:flex;align-items:center;height:26px;padding:0 0 0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;background:rgba(255,255,255,.6)}
+  .twk-num-lbl{font-weight:500;color:rgba(41,38,27,.6);cursor:ew-resize;
+    user-select:none;padding-right:8px}
+  .twk-num input{flex:1;min-width:0;height:100%;border:0;background:transparent;
+    font:inherit;font-variant-numeric:tabular-nums;text-align:right;padding:0 8px 0 0;
+    outline:none;color:inherit;-moz-appearance:textfield}
+  .twk-num input::-webkit-inner-spin-button,.twk-num input::-webkit-outer-spin-button{
+    -webkit-appearance:none;margin:0}
+  .twk-num-unit{padding-right:8px;color:rgba(41,38,27,.45)}
+
+  .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
+    background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
+  .twk-btn:hover{background:rgba(0,0,0,.88)}
+  .twk-btn.secondary{background:rgba(0,0,0,.06);color:inherit}
+  .twk-btn.secondary:hover{background:rgba(0,0,0,.1)}
+
+  .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
+    background:transparent;flex-shrink:0}
+  .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+  .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+  .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
+
+  .twk-chips{display:flex;gap:6px}
+  .twk-chip{position:relative;appearance:none;flex:1;min-width:0;height:46px;
+    padding:0;border:0;border-radius:6px;overflow:hidden;cursor:default;
+    box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.06);
+    transition:transform .12s cubic-bezier(.3,.7,.4,1),box-shadow .12s}
+  .twk-chip:hover{transform:translateY(-1px);
+    box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.12)}
+  .twk-chip[data-on="1"]{box-shadow:0 0 0 1.5px rgba(0,0,0,.85),
+    0 2px 6px rgba(0,0,0,.15)}
+  .twk-chip>span{position:absolute;top:0;bottom:0;right:0;width:34%;
+    display:flex;flex-direction:column;box-shadow:-1px 0 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i{flex:1;box-shadow:0 -1px 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i:first-child{box-shadow:none}
+  .twk-chip svg{position:absolute;top:6px;left:6px;width:13px;height:13px;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+`;
+
+// ── useTweaks ───────────────────────────────────────────────────────────────
+// Single source of truth for tweak values. setTweak persists via the host
+// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk).
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  // Accepts either setTweak('key', value) or setTweak({ key: value, ... }) so a
+  // useState-style call doesn't write a "[object Object]" key into the persisted
+  // JSON block.
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
+      ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+    // Same-window signal so in-page listeners (deck-stage rail thumbnails)
+    // can react — the parent message only reaches the host, not peers.
+    window.dispatchEvent(new CustomEvent('tweakchange', { detail: edits }));
+  }, []);
+  return [values, setTweak];
+}
+
+// ── TweaksPanel ─────────────────────────────────────────────────────────────
+// Floating shell. Registers the protocol listener BEFORE announcing
+// availability — if the announce ran first, the host's activate could land
+// before our handler exists and the toolbar toggle would silently no-op.
+// The close button posts __edit_mode_dismissed so the host's toolbar toggle
+// flips off in lockstep; the host echoes __deactivate_edit_mode back which
+// is what actually hides the panel.
+function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  // Auto-inject a rail toggle when a <deck-stage> is on the page. The
+  // toggle drives the deck's per-viewer _railVisible via window message;
+  // state is mirrored from the same localStorage key the deck reads so
+  // the control reflects reality across reloads. The mechanism is the
+  // message — authors who want custom placement can post it directly
+  // and pass noDeckControls to suppress this one.
+  const hasDeckStage = React.useMemo(
+    () => typeof document !== 'undefined' && !!document.querySelector('deck-stage'),
+    [],
+  );
+  // Hide the toggle until the host has actually enabled the rail (the
+  // __omelette_rail_enabled window message, posted only when the
+  // omelette_deck_rail_enabled flag is on for this user). The initial read
+  // covers TweaksPanel mounting after the message already arrived; the
+  // listener covers the common case of mounting first.
+  const [railEnabled, setRailEnabled] = React.useState(
+    () => hasDeckStage && !!document.querySelector('deck-stage')?._railEnabled,
+  );
+  React.useEffect(() => {
+    if (!hasDeckStage || railEnabled) return undefined;
+    const onMsg = (e) => {
+      if (e.data && e.data.type === '__omelette_rail_enabled') setRailEnabled(true);
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [hasDeckStage, railEnabled]);
+  const [railVisible, setRailVisible] = React.useState(() => {
+    try { return localStorage.getItem('deck-stage.railVisible') !== '0'; } catch (e) { return true; }
+  });
+  const toggleRail = (on) => {
+    setRailVisible(on);
+    window.postMessage({ type: '__deck_rail_visible', on }, '*');
+  };
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', clampToViewport);
+      return () => window.removeEventListener('resize', clampToViewport);
+    }
+    const ro = new ResizeObserver(clampToViewport);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = {
+        x: startRight - (ev.clientX - sx),
+        y: startBottom - (ev.clientY - sy),
+      };
+      clampToViewport();
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" data-noncommentable=""
+           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" aria-label="Close tweaks"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">
+          {children}
+          {hasDeckStage && railEnabled && !noDeckControls && (
+            <TweakSection label="Deck">
+              <TweakToggle label="Thumbnail rail" value={railVisible} onChange={toggleRail} />
+            </TweakSection>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function TweakSection({ label, children }) {
+  return (
+    <>
+      <div className="twk-sect">{label}</div>
+      {children}
+    </>
+  );
+}
+
+function TweakRow({ label, value, children, inline = false }) {
+  return (
+    <div className={inline ? 'twk-row twk-row-h' : 'twk-row'}>
+      <div className="twk-lbl">
+        <span>{label}</span>
+        {value != null && <span className="twk-val">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <TweakRow label={label} value={`${value}${unit}`}>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+             value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </TweakRow>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value}
+              onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  // The active value is read by pointer-move handlers attached for the lifetime
+  // of a drag — ref it so a stale closure doesn't fire onChange for every move.
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+
+  // Segments wrap mid-word once per-segment width runs out. The track is
+  // ~248px (280 panel − 28 body pad − 4 seg pad), each button loses 12px
+  // to its own padding, and 11.5px system-ui averages ~6.3px/char — so 2
+  // options fit ~16 chars each, 3 fit ~10. Past that (or >3 options), fall
+  // back to a dropdown rather than wrap.
+  const labelLen = (o) => String(typeof o === 'object' ? o.label : o).length;
+  const maxLen = options.reduce((m, o) => Math.max(m, labelLen(o)), 0);
+  const fitsAsSegments = maxLen <= ({ 2: 16, 3: 10 }[options.length] ?? 0);
+  if (!fitsAsSegments) {
+    // <select> emits strings — map back to the original option value so the
+    // fallback stays type-preserving (numbers, booleans) like the segment path.
+    const resolve = (s) => {
+      const m = options.find((o) => String(typeof o === 'object' ? o.value : o) === s);
+      return m === undefined ? s : typeof m === 'object' ? m.value : m;
+    };
+    return <TweakSelect label={label} value={value} options={options}
+                        onChange={(s) => onChange(resolve(s))} />;
+  }
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const inner = r.width - 4;
+    const i = Math.floor(((clientX - r.left - 2) / inner) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+
+  const onPointerDown = (e) => {
+    setDragging(true);
+    const v0 = segAt(e.clientX);
+    if (v0 !== valueRef.current) onChange(v0);
+    const move = (ev) => {
+      if (!trackRef.current) return;
+      const v = segAt(ev.clientX);
+      if (v !== valueRef.current) onChange(v);
+    };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <TweakRow label={label}>
+      <div ref={trackRef} role="radiogroup" onPointerDown={onPointerDown}
+           className={dragging ? 'twk-seg dragging' : 'twk-seg'}>
+        <div className="twk-seg-thumb"
+             style={{ left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
+                      width: `calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => (
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakSelect({ label, value, options, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <select className="twk-field" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => {
+          const v = typeof o === 'object' ? o.value : o;
+          const l = typeof o === 'object' ? o.label : o;
+          return <option key={v} value={v}>{l}</option>;
+        })}
+      </select>
+    </TweakRow>
+  );
+}
+
+function TweakText({ label, value, placeholder, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <input className="twk-field" type="text" value={value} placeholder={placeholder}
+             onChange={(e) => onChange(e.target.value)} />
+    </TweakRow>
+  );
+}
+
+function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) {
+  const clamp = (n) => {
+    if (min != null && n < min) return min;
+    if (max != null && n > max) return max;
+    return n;
+  };
+  const startRef = React.useRef({ x: 0, val: 0 });
+  const onScrubStart = (e) => {
+    e.preventDefault();
+    startRef.current = { x: e.clientX, val: value };
+    const decimals = (String(step).split('.')[1] || '').length;
+    const move = (ev) => {
+      const dx = ev.clientX - startRef.current.x;
+      const raw = startRef.current.val + dx * step;
+      const snapped = Math.round(raw / step) * step;
+      onChange(clamp(Number(snapped.toFixed(decimals))));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <div className="twk-num">
+      <span className="twk-num-lbl" onPointerDown={onScrubStart}>{label}</span>
+      <input type="number" value={value} min={min} max={max} step={step}
+             onChange={(e) => onChange(clamp(Number(e.target.value)))} />
+      {unit && <span className="twk-num-unit">{unit}</span>}
+    </div>
+  );
+}
+
+// Relative-luminance contrast pick — checkmarks drawn over a swatch need to
+// read on both #111 and #fafafa without per-option configuration. Hex input
+// only (#rgb / #rrggbb); named or rgb()/hsl() colors fall through to "light".
+function __twkIsLight(hex) {
+  const h = String(hex).replace('#', '');
+  const x = h.length === 3 ? h.replace(/./g, (c) => c + c) : h.padEnd(6, '0');
+  const n = parseInt(x.slice(0, 6), 16);
+  if (Number.isNaN(n)) return true;
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return r * 299 + g * 587 + b * 114 > 148000;
+}
+
+const __TwkCheck = ({ light }) => (
+  <svg viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M3 7.2 5.8 10 11 4.2" fill="none" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"
+          stroke={light ? 'rgba(0,0,0,.78)' : '#fff'} />
+  </svg>
+);
+
+// TweakColor — curated color/palette picker. Each option is either a single
+// hex string or an array of 1-5 hex strings; the card adapts — a lone color
+// renders solid, a palette renders colors[0] as the hero (left ~2/3) with the
+// rest stacked in a sharp column on the right. onChange emits the
+// option in the shape it was passed (string stays string, array stays array).
+// Without options it falls back to the native color input for back-compat.
+function TweakColor({ label, value, options, onChange }) {
+  if (!options || !options.length) {
+    return (
+      <div className="twk-row twk-row-h">
+        <div className="twk-lbl"><span>{label}</span></div>
+        <input type="color" className="twk-swatch" value={value}
+               onChange={(e) => onChange(e.target.value)} />
+      </div>
+    );
+  }
+  // Native <input type=color> emits lowercase hex per the HTML spec, so
+  // compare case-insensitively. String() guards JSON.stringify(undefined),
+  // which returns the primitive undefined (no .toLowerCase).
+  const key = (o) => String(JSON.stringify(o)).toLowerCase();
+  const cur = key(value);
+  return (
+    <TweakRow label={label}>
+      <div className="twk-chips" role="radiogroup">
+        {options.map((o, i) => {
+          const colors = Array.isArray(o) ? o : [o];
+          const [hero, ...rest] = colors;
+          const sup = rest.slice(0, 4);
+          const on = key(o) === cur;
+          return (
+            <button key={i} type="button" className="twk-chip" role="radio"
+                    aria-checked={on} data-on={on ? '1' : '0'}
+                    aria-label={colors.join(', ')} title={colors.join(' · ')}
+                    style={{ background: hero }}
+                    onClick={() => onChange(o)}>
+              {sup.length > 0 && (
+                <span>
+                  {sup.map((c, j) => <i key={j} style={{ background: c }} />)}
+                </span>
+              )}
+              {on && <__TwkCheck light={__twkIsLight(hero)} />}
+            </button>
+          );
+        })}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakButton({ label, onClick, secondary = false }) {
+  return (
+    <button type="button" className={secondary ? 'twk-btn secondary' : 'twk-btn'}
+            onClick={onClick}>{label}</button>
+  );
+}
+
+Object.assign(window, {
+  useTweaks, TweaksPanel, TweakSection, TweakRow,
+  TweakSlider, TweakToggle, TweakRadio, TweakSelect,
+  TweakText, TweakNumber, TweakColor, TweakButton,
+});
+
+
+// Home screen — clean summary
+
+const ICONS = {
+  sun: (s=24) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="4.2" fill="#ffd28a"/>
+      <g stroke="#ffd28a" strokeWidth="1.6" strokeLinecap="round">
+        <line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/>
+        <line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/>
+        <line x1="5.2" y1="5.2" x2="6.9" y2="6.9"/><line x1="17.1" y1="17.1" x2="18.8" y2="18.8"/>
+        <line x1="5.2" y1="18.8" x2="6.9" y2="17.1"/><line x1="17.1" y1="6.9" x2="18.8" y2="5.2"/>
+      </g>
+    </svg>
+  ),
+  rain: (s=24) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <path d="M7 13a4 4 0 0 1 .8-7.9A5 5 0 0 1 17 7a3.5 3.5 0 0 1 .5 6.95Z" fill="#9bb6d6"/>
+      <g stroke="#7fb3ff" strokeWidth="1.6" strokeLinecap="round">
+        <line x1="9" y1="16" x2="8" y2="20"/><line x1="13" y1="16" x2="12" y2="20"/><line x1="17" y1="16" x2="16" y2="20"/>
+      </g>
+    </svg>
+  ),
+};
+
+function HomeScreen({ now, pinnedIds }) {
+  const F = window.FAMILY;
+  const pinned = F.events.filter(e => pinnedIds && pinnedIds.has(e.id));
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+
+  return (
+    <div className="home-grid">
+      {/* Hero — clock + date + weather */}
+      <div className="card hero-card">
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <div className="clock-big">
+            <span>{hh}</span><span className="colon">:</span><span>{mm}</span>
+          </div>
+        </div>
+        <div className="date-block">
+          <div className="day-heb">{F.date.dayHeb}</div>
+          <div className="heb-d">{F.date.hebDate}</div>
+          <div className="greg">{F.date.greg}</div>
+        </div>
+        <div className="weather-block">
+          <div className="weather-temp">
+            {ICONS.sun(48)}
+            <span style={{marginRight:8}}>{F.weather.nowC}</span>
+            <span className="deg">°</span>
+          </div>
+          <div className="weather-meta">
+            <div className="row"><span className="lbl">FEELS</span><span>{F.weather.feels}°</span></div>
+            <div className="row"><span className="lbl">HUMID</span><span>{F.weather.humidity}%</span></div>
+            <div className="row"><span className="lbl">TMRW</span><span>{F.weather.tomorrow.hi}° · 🌧</span></div>
+            <div className="row"><span className="lbl">SUNSET</span><span>{F.weather.sunset}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Left — Ron mini */}
+      <div className="card kid-mini">
+        <div className="kid-mini-head">
+          <div className="kid-av ron">{F.ron.initial}</div>
+          <div style={{flex:1}}>
+            <div className="kid-mini-name">{F.ron.name}</div>
+            <div className="kid-mini-grade">{F.ron.en} · {F.ron.grade}</div>
+          </div>
+          <span style={{
+            display:'inline-flex',alignItems:'center',gap:6,
+            fontFamily:'Geist Mono, monospace',fontSize:9,letterSpacing:'.12em',
+            color:'var(--ron)',padding:'3px 8px',
+            background:'var(--ron-soft)',borderRadius:999,
+            border:'.5px solid rgba(90,169,255,.3)'
+          }}>
+            <span style={{width:5,height:5,borderRadius:'50%',background:'var(--ron)',boxShadow:'0 0 6px var(--ron)'}}/>
+            בבית הספר
+          </span>
+        </div>
+        <div className="now-pill ron">
+          <div className="now-label">עכשיו · {F.ron.now.time}</div>
+          <div className="now-text">{F.ron.now.name}</div>
+          <div className="now-room">{F.ron.now.room}</div>
+        </div>
+        <div className="test-pill urgent">
+          <div className="test-days"><div className="n">היום</div></div>
+          <div className="test-info">
+            <div className="s">⚠ {F.ron.test.subj}</div>
+            <div className="t">{F.ron.test.topic}</div>
+          </div>
+        </div>
+        <div>
+          <div className="card-title" style={{marginBottom:6}}>
+            ש״ב למחר · {F.ron.homework.filter(h=>h.done).length}/{F.ron.homework.length} ✓
+          </div>
+          <div className="hw-mini">
+            {F.ron.homework.map((h,i) => (
+              <div key={i} className={`item ${h.done?'done':''}`}>
+                <div className={`check ${h.done?'done':''}`}/>
+                <span className="subj">{h.subj}</span>
+                <span className="text">{h.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Center — Today timeline */}
+      <div className="card today-card">
+        <div className="briefing">
+          <div className="ai-tag"><span className="dot"/><span>AI BRIEFING · 06:42</span></div>
+          <div className="briefing-text">
+            {F.briefing.map((seg,i) => {
+              if (seg.type === 'text') return <span key={i}>{seg.value}</span>;
+              if (seg.type === 'time') return <span key={i} className="time">{seg.value}</span>;
+              return <span key={i} className={seg.type}>{seg.value}</span>;
+            })}
+          </div>
+        </div>
+        <div className="card-title" style={{marginTop:4,display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+          <span>היום במשפחה</span>
+          <span style={{fontFamily:'Geist Mono, monospace',fontSize:9,letterSpacing:'.12em',color:'var(--ink-3)'}}>
+            {F.todayEvents.length} EVENTS
+          </span>
+        </div>
+        <div className="timeline">
+          {F.todayEvents.map((e,i) => (
+            <div key={i} className={`tl-row ${e.tag} ${e.state}`}>
+              <div className="tl-time">{e.time}</div>
+              <div className="tl-dot"/>
+              <div className="tl-text">{e.text}</div>
+              {e.who && <div className="tl-who">{e.who}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right — Yuval mini */}
+      {null}
+      {/* placeholder so JSX siblings remain explicit */}
+      <div className="card kid-mini">
+        <div className="kid-mini-head">
+          <div className="kid-av yuval">{F.yuval.initial}</div>
+          <div style={{flex:1}}>
+            <div className="kid-mini-name">{F.yuval.name}</div>
+            <div className="kid-mini-grade">{F.yuval.en} · {F.yuval.grade}</div>
+          </div>
+          <span style={{
+            display:'inline-flex',alignItems:'center',gap:6,
+            fontFamily:'Geist Mono, monospace',fontSize:9,letterSpacing:'.12em',
+            color:'var(--yuval)',padding:'3px 8px',
+            background:'var(--yuval-soft)',borderRadius:999,
+            border:'.5px solid rgba(255,138,107,.3)'
+          }}>
+            <span style={{width:5,height:5,borderRadius:'50%',background:'var(--yuval)',boxShadow:'0 0 6px var(--yuval)'}}/>
+            בבית הספר
+          </span>
+        </div>
+        <div className="now-pill yuval">
+          <div className="now-label">עכשיו · {F.yuval.now.time}</div>
+          <div className="now-text">{F.yuval.now.name}</div>
+          <div className="now-room">{F.yuval.now.room}</div>
+        </div>
+        <div className="next-list">
+          <div className="card-title" style={{marginBottom:4}}>אחר כך</div>
+          {F.yuval.next.map((n,i) => (
+            <div key={i} className="next-row">
+              <span className="t">{n.time}</span>
+              <span className="n">{n.name}</span>
+              <span className="r">{n.room}</span>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div className="card-title" style={{marginBottom:6}}>
+            ש״ב למחר · {F.yuval.homework.filter(h=>h.done).length}/{F.yuval.homework.length} ✓
+          </div>
+          <div className="hw-mini">
+            {F.yuval.homework.map((h,i) => (
+              <div key={i} className={`item ${h.done?'done':''}`}>
+                <div className={`check ${h.done?'done':''}`}/>
+                <span className="subj">{h.subj}</span>
+                <span className="text">{h.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Pinned events strip */}
+      {pinned.length > 0 && (
+        <div className="pinned-strip">
+          <div className="pinned-label">
+            <span style={{fontSize:11}}>★</span>
+            <span>מסומן</span>
+          </div>
+          {pinned.map(e => (
+            <div key={e.id} className="pin-chip">
+              <span className="pc-icon">{e.icon}</span>
+              <div className="pc-body">
+                <div className="pc-top">
+                  <span className="pc-days">{e.daysAway}</span>
+                  <span className="pc-days-lbl">ימים</span>
+                  <span className="pc-date">{e.date}</span>
+                </div>
+                <div className="pc-name">{e.name}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom widget strip */}
+      <div className="widget-strip">
+        {F.shabbat.todayIs === 'friday' || F.shabbat.todayIs === 'saturday' ? (
+          <div className="widget shabbat">
+            <div className="candle">
+              <div className="body"/>
+              <div className="wick"/>
+              <div className="flame"/>
+            </div>
+            <div className="sh-times">
+              <div className="w-label">שבת · נתניה</div>
+              <div className="sh-time-row"><span className="val">{F.shabbat.candleLighting}</span><span className="lbl">הדלקת נרות</span></div>
+              <div className="sh-time-row"><span className="val" style={{fontSize:18,color:'rgba(255,210,138,.75)'}}>{F.shabbat.havdalah}</span><span className="lbl">צאת השבת</span></div>
+            </div>
+          </div>
+        ) : (
+          <NextEventWidget event={F.events[0]}/>
+        )}
+
+        <div className="widget holiday">
+          <span className="w-icon">{F.events.find(e => e.kind === 'vacation').icon}</span>
+          <div style={{flex:1,display:'flex',flexDirection:'column',gap:2}}>
+            <div className="w-label">חופשה הבאה · SCHOOL BREAK</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+              <span className="w-big" style={{fontSize:36}}>{F.events.find(e => e.kind === 'vacation').daysAway}</span>
+              <span style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:15,color:'var(--ink-1)'}}>ימים</span>
+              <span style={{fontFamily:'Geist Mono, monospace',fontSize:10,letterSpacing:'.1em',color:'var(--ink-3)',marginRight:'auto'}}>{F.events.find(e => e.kind === 'vacation').date}</span>
+            </div>
+            <div className="w-title">{F.events.find(e => e.kind === 'vacation').name}</div>
+          </div>
+        </div>
+
+        <div className="widget history">
+          <div className="h-mark">
+            <div className="h-year">{F.history.year}</div>
+            <div className="h-lbl">היום בהיסטוריה</div>
+          </div>
+          <div className="w-text">{F.history.text}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NextEventWidget({ event }) {
+  return (
+    <div className="widget" style={{
+      background: 'radial-gradient(120% 80% at 100% 0%, rgba(255,213,96,.10), transparent 55%), linear-gradient(180deg, var(--glass-2), var(--glass))',
+      borderColor: 'rgba(255,213,96,.18)',
+    }}>
+      <span style={{fontSize:32,opacity:.85}}>{event.icon}</span>
+      <div style={{flex:1,display:'flex',flexDirection:'column',gap:2}}>
+        <div className="w-label">החג הבא · NEXT EVENT</div>
+        <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+          <span className="w-big" style={{fontSize:36}}>{event.daysAway}</span>
+          <span style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:15,color:'var(--ink-1)'}}>ימים</span>
+          <span style={{fontFamily:'Geist Mono, monospace',fontSize:10,letterSpacing:'.1em',color:'var(--ink-3)',marginRight:'auto'}}>{event.date}</span>
+        </div>
+        <div className="w-title">{event.name}</div>
+      </div>
+    </div>
+  );
+}
+
+window.HomeScreen = HomeScreen;
+window.ICONS = ICONS;
+
+
+// Schedule screen — full week view + kids detail toggle
+
+function ScheduleScreen({ pinnedIds, togglePin }) {
+  const F = window.FAMILY;
+  const [view, setView] = React.useState('week');
+  const [selectedEvent, setSelectedEvent] = React.useState(null);
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:18,height:'100%'}}>
+      <div className="screen-head">
+        <div>
+          <div className="screen-h1">לוח השבוע</div>
+          <div className="screen-sub" style={{marginTop:6}}>WEEK 20 · MAY 10—16, 2026</div>
+        </div>
+        <div className="dock-inner" style={{padding:4}}>
+          <div className={`dock-tab ${view==='week'?'active':''}`} onClick={()=>setView('week')} style={{padding:'8px 14px',fontSize:12}}>
+            <span className="tab-icon">▦</span><span>שבוע</span>
+          </div>
+          <div className={`dock-tab ${view==='month'?'active':''}`} onClick={()=>setView('month')} style={{padding:'8px 14px',fontSize:12}}>
+            <span className="tab-icon">◫</span><span>חודש</span>
+          </div>
+          <div className={`dock-tab ${view==='events'?'active':''}`} onClick={()=>setView('events')} style={{padding:'8px 14px',fontSize:12}}>
+            <span className="tab-icon">✦</span><span>חגים וחופשות</span>
+          </div>
+          <div className={`dock-tab ${view==='ron'?'active':''}`} onClick={()=>setView('ron')} style={{padding:'8px 14px',fontSize:12}}>
+            <span className="tab-icon" style={{color:'var(--ron)'}}>●</span><span>רון</span>
+          </div>
+          <div className={`dock-tab ${view==='yuval'?'active':''}`} onClick={()=>setView('yuval')} style={{padding:'8px 14px',fontSize:12}}>
+            <span className="tab-icon" style={{color:'var(--yuval)'}}>●</span><span>יובל</span>
+          </div>
+        </div>
+      </div>
+
+      {view === 'week' && (
+        <div style={{display:'flex',flexDirection:'column',gap:14,flex:1}}>
+          <div className="week-strip">
+            {F.week.map((d,i) => (
+              <div key={i} className={`week-day ${d.today?'today':''} ${d.weekend?'weekend':''}`} style={{opacity:d.past?.55:1}}>
+                <div className="week-day-head">
+                  <div>
+                    <div className="week-day-name">{d.name}</div>
+                    <div style={{fontFamily:'Geist Mono, monospace',fontSize:8.5,letterSpacing:'.14em',color:'var(--ink-3)',marginTop:2}}>
+                      {d.tag}
+                    </div>
+                  </div>
+                  <div className="week-day-num">{d.num}</div>
+                </div>
+                {d.events.map((e,j) => (
+                  <div key={j} className={`week-evt ${e.tag}`}>
+                    <span className="dot"/>
+                    <span className="txt">{e.text}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Today summary card */}
+          <div className="card" style={{flex:1,minHeight:0,display:'flex',flexDirection:'column'}}>
+            <div className="card-head">
+              <div className="card-title">היום במשפחה — שלישי 12 במאי</div>
+              <div className="card-en">7 EVENTS</div>
+            </div>
+            <div className="timeline" style={{flex:1}}>
+              {F.todayEvents.map((e,i) => (
+                <div key={i} className={`tl-row ${e.tag} ${e.state}`}>
+                  <div className="tl-time">{e.time}</div>
+                  <div className="tl-dot"/>
+                  <div className="tl-text">{e.text}</div>
+                  {e.who && <div className="tl-who">{e.who}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(view === 'ron' || view === 'yuval') && <KidDetail kid={F[view]} kidKey={view}/>}
+
+      {view === 'events' && <EventsView onSelect={setSelectedEvent} pinnedIds={pinnedIds}/>}
+      {view === 'month' && <MonthView onSelect={setSelectedEvent} pinnedIds={pinnedIds}/>}
+      {selectedEvent && <CountdownOverlay event={selectedEvent} onClose={()=>setSelectedEvent(null)} pinnedIds={pinnedIds} togglePin={togglePin}/>}
+    </div>
+  );
+}
+
+const HEB_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const HEB_DOW = ['א','ב','ג','ד','ה','ו','ש']; // Sunday-first
+
+function MonthView({ onSelect, pinnedIds }) {
+  const F = window.FAMILY;
+  // Today: Tue May 12, 2026
+  const TODAY = { y: 2026, m: 5, d: 12 };
+  const [cur, setCur] = React.useState({ y: 2026, m: 5 });
+
+  const firstDow = new Date(cur.y, cur.m - 1, 1).getDay(); // 0 = Sun
+  const daysInMonth = new Date(cur.y, cur.m, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7) cells.push(null);
+
+  const eventsForDay = (d) => F.events.filter(e => e._d && e._d[0] === cur.y && e._d[1] === cur.m && e._d[2] === d);
+
+  const goPrev = () => setCur(c => c.m === 1 ? { y: c.y - 1, m: 12 } : { y: c.y, m: c.m - 1 });
+  const goNext = () => setCur(c => c.m === 12 ? { y: c.y + 1, m: 1 } : { y: c.y, m: c.m + 1 });
+  const monthEvents = F.events.filter(e => e._d && e._d[0] === cur.y && e._d[1] === cur.m);
+
+  return (
+    <div className="card" style={{flex:1,minHeight:0,display:'flex',flexDirection:'column',gap:14}}>
+      <div className="month-head">
+        <div className="month-nav" onClick={goNext} title="הבא">‹</div>
+        <div className="month-title">
+          <div className="mt-name">{HEB_MONTHS[cur.m - 1]}</div>
+          <div className="mt-year">{cur.y}</div>
+        </div>
+        <div className="month-nav" onClick={goPrev} title="הקודם">›</div>
+        <div style={{flex:1}}/>
+        <div style={{fontFamily:'Geist Mono, monospace',fontSize:10,letterSpacing:'.14em',color:'var(--ink-3)'}}>
+          {monthEvents.length} EVENTS · TAP A DAY
+        </div>
+      </div>
+
+      <div className="month-grid">
+        <div className="month-dow">
+          {HEB_DOW.map(d => <div key={d} className="dow-cell">{d}</div>)}
+        </div>
+        <div className="month-cells">
+          {cells.map((d, i) => {
+            if (!d) return <div key={i} className="month-cell empty"/>;
+            const evs = eventsForDay(d);
+            const isToday = cur.y === TODAY.y && cur.m === TODAY.m && d === TODAY.d;
+            const isPast = (cur.y < TODAY.y) || (cur.y === TODAY.y && cur.m < TODAY.m) || (cur.y === TODAY.y && cur.m === TODAY.m && d < TODAY.d);
+            const dow = (firstDow + d - 1) % 7;
+            const isWeekend = dow === 5 || dow === 6;
+            return (
+              <div key={i} className={`month-cell ${isToday?'today':''} ${isPast?'past':''} ${isWeekend?'weekend':''} ${evs.length?'has':''}`}
+                   onClick={evs.length ? () => onSelect(evs[0]) : undefined}>
+                <div className="mc-num">{d}</div>
+                {evs.length > 0 && (
+                  <div className="mc-events">
+                    {evs.slice(0, 2).map(e => (
+                      <div key={e.id} className={`mc-evt ${e.kind} ${pinnedIds && pinnedIds.has(e.id) ? 'pinned' : ''}`}>
+                        <span className="mc-icon">{e.icon}</span>
+                        <span className="mc-name">{e.name}</span>
+                      </div>
+                    ))}
+                    {evs.length > 2 && <div className="mc-more">+{evs.length - 2}</div>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventsView({ onSelect, pinnedIds }) {
+  const F = window.FAMILY;
+  const [filter, setFilter] = React.useState('all');
+  const items = F.events.filter(e => filter === 'all' || e.kind === filter);
+
+  return (
+    <div className="card" style={{flex:1,minHeight:0,display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',alignItems:'center',gap:8}}>
+        {[
+          {id:'all',label:'הכל'},
+          {id:'holiday',label:'חגים'},
+          {id:'vacation',label:'חופשות'},
+          {id:'custom',label:'אישי'},
+          {id:'fast',label:'צומות'},
+        ].map(f => (
+          <div key={f.id}
+            onClick={()=>setFilter(f.id)}
+            style={{
+              padding:'7px 14px',borderRadius:10,fontSize:12,cursor:'pointer',
+              background: filter===f.id ? 'rgba(255,255,255,.08)' : 'transparent',
+              color: filter===f.id ? 'var(--ink-0)' : 'var(--ink-2)',
+              border: '.5px solid var(--line)',
+            }}>{f.label}</div>
+        ))}
+        <div style={{flex:1}}/>
+        <div style={{fontFamily:'Geist Mono, monospace',fontSize:10,letterSpacing:'.14em',color:'var(--ink-3)'}}>
+          {items.length} EVENTS · TAP FOR COUNTDOWN
+        </div>
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:8,paddingLeft:4}}>
+        {items.map(e => {
+          const isPinned = pinnedIds && pinnedIds.has(e.id);
+          return (
+            <div key={e.id} onClick={()=>onSelect(e)} className={`event-row ${isPinned?'pinned':''}`}>
+              <div className="ev-icon">{e.icon}</div>
+              <div style={{flex:1,display:'flex',flexDirection:'column',gap:2}}>
+                <div className="ev-name">
+                  {isPinned && <span style={{color:'#ffd560',marginLeft:6}}>★</span>}
+                  {e.name}
+                </div>
+                <div className="ev-meta">
+                  <span className={`ev-tag ${e.kind}`}>{e.kind === 'holiday' ? 'חג' : e.kind === 'vacation' ? 'חופשה' : e.kind === 'custom' ? 'אישי' : 'צום'}</span>
+                  <span>{e.date}</span>
+                  {e.length && <span>· {e.length}</span>}
+                </div>
+              </div>
+              <div className="ev-days">
+                <div className="n">{e.daysAway}</div>
+                <div className="l">ימים</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CountdownOverlay({ event, onClose, pinnedIds, togglePin }) {
+  const days = event.daysAway;
+  const hours = Math.floor((24 - new Date().getHours()));
+  const isPinned = pinnedIds && pinnedIds.has(event.id);
+  return (
+    <div className="countdown-overlay" onClick={onClose}>
+      <div className="countdown-card" onClick={(e)=>e.stopPropagation()}>
+        <div className="reader-close" style={{position:'absolute',top:20,left:20}} onClick={onClose}>×</div>
+        <div className={`cd-pin ${isPinned?'on':''}`} onClick={() => togglePin && togglePin(event.id)}>
+          <span style={{fontSize:14}}>★</span>
+          <span>{isPinned ? 'מסומן במסך הבית' : 'הצג במסך הבית'}</span>
+        </div>
+        <div className="cd-icon">{event.icon}</div>
+        <div className="cd-kind">
+          {event.kind === 'holiday' ? 'חג' : event.kind === 'vacation' ? 'חופשת בית ספר' : event.kind === 'custom' ? 'אירוע אישי' : 'צום'}
+        </div>
+        <div className="cd-name">{event.name}</div>
+        <div className="cd-date">{event.date}{event.length ? ` · ${event.length}` : ''}</div>
+        <div className="cd-counter">
+          <div className="cd-unit">
+            <span className="cd-num">{days}</span>
+            <span className="cd-lbl">ימים</span>
+          </div>
+          <div className="cd-sep">:</div>
+          <div className="cd-unit">
+            <span className="cd-num">{String(hours).padStart(2,'0')}</span>
+            <span className="cd-lbl">שעות</span>
+          </div>
+          <div className="cd-sep">:</div>
+          <div className="cd-unit">
+            <span className="cd-num">{String(60 - new Date().getMinutes()).padStart(2,'0')}</span>
+            <span className="cd-lbl">דקות</span>
+          </div>
+        </div>
+        <div className="cd-progress">
+          <div className="cd-bar"><div style={{width: `${Math.max(0, 100 - (days/365)*100)}%`}}/></div>
+          <div className="cd-progress-lbl">
+            <span>היום</span>
+            <span>{event.date}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KidDetail({ kid, kidKey }) {
+  return (
+    <div className="card" style={{flex:1,display:'flex',flexDirection:'column',gap:18}}>
+      <div className="kid-mini-head">
+        <div className={`kid-av ${kidKey}`} style={{width:60,height:60,fontSize:30,borderRadius:18}}>{kid.initial}</div>
+        <div style={{flex:1}}>
+          <div className="kid-mini-name" style={{fontSize:32}}>{kid.name}</div>
+          <div className="kid-mini-grade">{kid.en} · {kid.grade}</div>
+        </div>
+        <div className={`now-pill ${kidKey}`} style={{minWidth:200}}>
+          <div className="now-label">עכשיו · {kid.now.time}</div>
+          <div className="now-text">{kid.now.name}</div>
+          <div className="now-room">{kid.now.room}</div>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:18,flex:1,minHeight:0}}>
+        <div>
+          <div className="card-title" style={{marginBottom:10}}>שאר היום</div>
+          <div className="next-list">
+            {kid.next.map((n,i) => (
+              <div key={i} className="next-row" style={{padding:'10px 12px'}}>
+                <span className="t">{n.time}</span>
+                <span className="n" style={{fontSize:14}}>{n.name}</span>
+                <span className="r">{n.room}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="card-title" style={{marginBottom:10}}>שיעורי בית</div>
+          <div className="hw-mini" style={{gap:8}}>
+            {kid.homework.map((h,i) => (
+              <div key={i} className={`item ${h.done?'done':''}`} style={{padding:'10px 12px',background:'rgba(255,255,255,.025)',borderRadius:10,fontSize:13.5}}>
+                <div className={`check ${h.done?'done':''}`}/>
+                <span className="subj">{h.subj}</span>
+                <span className="text">{h.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="card-title" style={{marginBottom:10}}>מבחן הבא</div>
+          <div className={`test-pill ${kid.test.urgent?'urgent':''}`} style={{padding:'18px 16px'}}>
+            <div className="test-days" style={{minWidth:60}}>
+              <div className="n" style={{fontSize:36}}>{kid.test.days === 0 ? 'היום' : kid.test.days}</div>
+              {kid.test.days !== 0 && <div className="l">ימים</div>}
+            </div>
+            <div className="test-info">
+              <div className="s" style={{fontSize:16}}>{kid.test.subj}</div>
+              <div className="t" style={{fontSize:13}}>{kid.test.topic}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.ScheduleScreen = ScheduleScreen;
+
+
+// Bulletin board (notes) screen
+
+function NotesScreen() {
+  const F = window.FAMILY;
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14,height:'100%'}}>
+      <div className="screen-head">
+        <div>
+          <div className="screen-h1">לוח המשפחה</div>
+          <div className="screen-sub" style={{marginTop:6}}>פתקים מיועדים מתעלמים אחרי 24 שעות · מצמידים עם 📌</div>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          {[
+            {c:'mom',l:'אמא'},{c:'dad',l:'אבא'},{c:'ron',l:'רון'},{c:'yuval',l:'יובל'},{c:'fam',l:'משפחה'}
+          ].map(p => (
+            <div key={p.c} style={{
+              display:'flex',alignItems:'center',gap:6,
+              padding:'5px 10px',borderRadius:999,fontSize:11,
+              background:'rgba(255,255,255,.04)',
+              border:'.5px solid var(--line)',
+              color:'var(--ink-1)'
+            }}>
+              <span style={{
+                width:10,height:10,borderRadius:'50%',
+                background: p.c==='mom'?'#c89aff':p.c==='dad'?'#7be0a6':p.c==='ron'?'#5aa9ff':p.c==='yuval'?'#ff8a6b':'#ffd560'
+              }}/>
+              {p.l}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{flex:1,padding:0,minHeight:0,overflow:'hidden'}}>
+        <div className="notes-board">
+          {F.notes.map(n => (
+            <div key={n.id} className={`note color-${n.color}`} style={{
+              left: n.x, top: n.y, transform: `rotate(${n.rot}deg)`,
+            }}>
+              {n.pinned && <div className="note-pin"/>}
+              <div className="note-from">{n.from}</div>
+              {n.emoji && <div className="note-emoji">{n.emoji}</div>}
+              {n.text && <div className="note-text">{n.text}</div>}
+              {n.voice && (
+                <div className="voice-bar">
+                  <div className="play">▶</div>
+                  <div className="wave">
+                    {n.voice.wave.map((h,i) => (
+                      <span key={i} style={{height:`${h*2}px`}}/>
+                    ))}
+                  </div>
+                  <div className="dur">{n.voice.dur}</div>
+                </div>
+              )}
+              <div className="note-when">{n.when}</div>
+            </div>
+          ))}
+
+          <div className="notes-add">
+            <div className="qr">
+              {Array.from({length:49}).map((_,i) => (
+                <span key={i} style={{
+                  background: [0,1,2,3,4,5,6,7,13,14,20,21,27,28,34,35,41,42,43,44,45,46,47,48,12,18,24,30,36,9,11,16,22,38].includes(i)?'#0a0d14':'transparent'
+                }}/>
+              ))}
+            </div>
+            <span>סרקו כדי להוסיף פתק מהטלפון</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.NotesScreen = NotesScreen;
+
+
+// Photos: gallery + idle frame mode
+
+function PhotosScreen({ onEnterFrame }) {
+  const F = window.FAMILY;
+  const layouts = ['wide','','tall','','','wide','','tall'];
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:18,height:'100%'}}>
+      <div className="screen-head">
+        <div>
+          <div className="screen-h1">גלריה משפחתית</div>
+          <div className="screen-sub" style={{marginTop:6}}>SHARED ALBUM · 1,247 PHOTOS · אוטומטית במצב סרק</div>
+        </div>
+        <div className="reader-btn primary" onClick={onEnterFrame}>
+          <span>▶</span> מצב סלייד-שואו
+        </div>
+      </div>
+
+      <div className="card" style={{flex:1,padding:14,minHeight:0,overflow:'hidden'}}>
+        <div className="photo-grid">
+          {[...F.photos, ...F.photos].slice(0,12).map((p,i) => (
+            <div key={i} className={`photo-tile ${layouts[i%layouts.length]}`}
+              style={{background: p.grad}}>
+              <div className="photo-cap">{p.caption}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PhotoFrameMode({ now, onExit }) {
+  const F = window.FAMILY;
+  const [idx, setIdx] = React.useState(0);
+  React.useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i+1) % F.photos.length), 6000);
+    return () => clearInterval(t);
+  }, []);
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const p = F.photos[idx];
+
+  return (
+    <div className="photo-frame" onClick={onExit}>
+      {F.photos.map((ph,i) => (
+        <div key={i} className={`ph ${i===idx?'active':''}`} style={{background: ph.grad}}/>
+      ))}
+      <div className="photo-vignette"/>
+      <div className="photo-time">
+        <div className="pt-clock">{hh}<span style={{fontStyle:'italic',opacity:.7}}>:</span>{mm}</div>
+        <div className="pt-date">{F.date.dayHeb} · {F.date.hebDate}</div>
+      </div>
+      <div className="photo-meta">
+        <div className="pm-date">{p.caption}</div>
+        <div className="pm-loc">{p.loc}</div>
+      </div>
+      <div className="photo-tap-hint">TAP TO RETURN ·  ‹  ›</div>
+    </div>
+  );
+}
+
+window.PhotosScreen = PhotosScreen;
+window.PhotoFrameMode = PhotoFrameMode;
+
+
+// Main shell — tab nav, scaling, idle photo frame
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "tod": "morning",
+  "showFrameMode": true,
+  "idleSeconds": 90,
+  "theme": "dark",
+  "orientation": "landscape"
+}/*EDITMODE-END*/;
+
+function useScale(orientation) {
+  React.useEffect(() => {
+    const W = orientation === 'portrait' ? 820 : 1180;
+    const H = orientation === 'portrait' ? 1180 : 820;
+    const stage = document.getElementById('stage');
+    const scaler = document.getElementById('scaler');
+    if (scaler) { scaler.style.width = W + 'px'; scaler.style.height = H + 'px'; }
+    const fit = () => {
+      if (!scaler) return;
+      const sx = window.innerWidth / W;
+      const sy = window.innerHeight / H;
+      scaler.style.transform = `scale(${Math.min(sx, sy)})`;
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [orientation]);
+}
+
+function useClock() {
+  const [now, setNow] = React.useState(() => new Date());
+  React.useEffect(() => {
+    const t = setInterval(() => setNow(prev => new Date(prev.getTime() + 1000)), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
+
+const TABS = [
+  { id: 'home', label: 'בית', icon: '⌂' },
+  { id: 'schedule', label: 'לו״ז', icon: '▦' },
+  { id: 'notes', label: 'פתקים', icon: '✎', badge: 8 },
+  { id: 'photos', label: 'גלריה', icon: '◐' },
+];
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [tab, setTab] = React.useState('home');
+  const [frame, setFrame] = React.useState(false);
+  const [pinnedIds, setPinnedIds] = React.useState(() =>
+    new Set(window.FAMILY.events.filter(e => e.pinned).map(e => e.id))
+  );
+  const togglePin = React.useCallback((id) => {
+    setPinnedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const now = useClock();
+  useScale(t.orientation);
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-tod', t.tod);
+    document.documentElement.setAttribute('data-theme', t.theme);
+    document.documentElement.setAttribute('data-orientation', t.orientation);
+  }, [t.tod, t.theme, t.orientation]);
+
+  // Idle → photo frame mode
+  React.useEffect(() => {
+    if (!t.showFrameMode) return;
+    let timer;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setFrame(true), t.idleSeconds * 1000);
+    };
+    const handler = () => { if (!frame) reset(); };
+    reset();
+    window.addEventListener('mousemove', handler);
+    window.addEventListener('keydown', handler);
+    window.addEventListener('click', handler);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('mousemove', handler);
+      window.removeEventListener('keydown', handler);
+      window.removeEventListener('click', handler);
+    };
+  }, [t.showFrameMode, t.idleSeconds, frame]);
+
+  let screen;
+  if (tab === 'home') screen = <HomeScreen now={now} pinnedIds={pinnedIds}/>;
+  else if (tab === 'schedule') screen = <ScheduleScreen pinnedIds={pinnedIds} togglePin={togglePin}/>;
+  else if (tab === 'notes') screen = <NotesScreen/>;
+  else if (tab === 'photos') screen = <PhotosScreen onEnterFrame={()=>setFrame(true)}/>;
+
+  return (
+    <div className="app">
+      <div className="orb a"/>
+      <div className="orb b"/>
+      <div className="grain"/>
+
+      <div className="screen-wrap">{screen}</div>
+
+      {/* Theme toggle */}
+      <div className="theme-toggle" onClick={() => setTweak('theme', t.theme === 'dark' ? 'light' : 'dark')} title="מצב בהיר/כהה">
+        {t.theme === 'dark' ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="4" fill="currentColor"/>
+            <g stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+              <line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/>
+              <line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/>
+              <line x1="5.6" y1="5.6" x2="7" y2="7"/><line x1="17" y1="17" x2="18.4" y2="18.4"/>
+              <line x1="5.6" y1="18.4" x2="7" y2="17"/><line x1="17" y1="7" x2="18.4" y2="5.6"/>
+            </g>
+          </svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" fill="currentColor"/>
+          </svg>
+        )}
+      </div>
+
+      <div className="dock">
+        <div className="dock-inner">
+          {TABS.map(T => (
+            <div key={T.id} className={`dock-tab ${tab===T.id?'active':''}`} onClick={()=>setTab(T.id)}>
+              <span className="tab-icon">{T.icon}</span>
+              <span>{T.label}</span>
+              {T.badge && <span className="tab-badge">{T.badge}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {frame && t.showFrameMode && (
+        <PhotoFrameMode now={now} onExit={()=>setFrame(false)}/>
+      )}
+
+      <TweaksPanel>
+        <TweakSection label="עיצוב"/>
+        <TweakRadio label="זמן ביום" value={t.tod}
+          options={['morning','day','sunset','night']}
+          onChange={v => setTweak('tod', v)}/>
+        <TweakRadio label="מצב תצוגה" value={t.theme}
+          options={['dark','light']}
+          onChange={v => setTweak('theme', v)}/>
+        <TweakRadio label="כיוון מסך" value={t.orientation}
+          options={['landscape','portrait']}
+          onChange={v => setTweak('orientation', v)}/>
+        <TweakSection label="מצב סלייד-שואו"/>
+        <TweakToggle label="הפעל אוטומטית" value={t.showFrameMode}
+          onChange={v => setTweak('showFrameMode', v)}/>
+        <TweakSlider label="זמן לפני הפעלה" value={t.idleSeconds}
+          min={10} max={300} step={10} unit="s"
+          onChange={v => setTweak('idleSeconds', v)}/>
+        <TweakButton label="הפעל עכשיו" onClick={()=>setFrame(true)}>פתח גלריה</TweakButton>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+// Wait for data to load before rendering
+function renderWhenReady() {
+  if (window.FAMILY_LOADING !== false) {
+    setTimeout(renderWhenReady, 100);
+    return;
+  }
+  if (!window.FAMILY) {
+    // Fallback minimal data
+    window.FAMILY = {
+      date: { dayHeb: 'יום טוב', hebDate: '', greg: '' },
+      weather: { nowC: '--', feels: '--', humidity: '--', wind: '--', icon: 'sun', desc: '', sunrise: '--:--', sunset: '--:--', today: { hi: '--', lo: '--', icon: 'sun' }, tomorrow: { hi: '--', lo: '--', icon: 'sun' } },
+      shabbat: { candleLighting: '--:--', havdalah: '--:--', parasha: '', daysAway: 0, todayIs: 'other' },
+      briefing: [{ type: 'text', value: 'בוקר טוב למשפחה!' }],
+      todayEvents: [], week: [], events: [], notes: [], photos: [], shopping: [], recipes: [], recipeCats: [],
+      ron: { name: 'רון', initial: 'ר', grade: 'כיתה ו׳', en: 'GRADE 6', now: null, next: [], homework: [], test: null, lessonEvents: [] },
+      yuval: { name: 'יובל', initial: 'י', grade: 'כיתה ב׳', en: 'GRADE 2', now: null, next: [], homework: [], test: null, lessonEvents: [] },
+      presence: [], holiday: null, history: { year: '', text: '' },
+    };
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+}
+renderWhenReady();
+
+</script>
+
+</body>
+</html>
