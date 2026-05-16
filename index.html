@@ -1784,6 +1784,7 @@ async function loadFamilyData() {
       subject: m.subject || '',
       id: m.id || '',
       unread: !!m.unread,
+      body: m.body || '',   // include full message body
     }));
 
     const notifications = (kidData.notifications || []).slice(0, 12).map(n => ({
@@ -3987,8 +3988,11 @@ renderWhenReady();
           <span class="mic-icon">🎤</span>
           <span class="mic-label">דבר</span>
         </button>
-        <input type="text" id="ai-text-input" placeholder="או הקלד שאלה..." />
+        <input type="text" id="ai-text-input" placeholder="או הקלד..." />
         <button id="ai-send-btn" class="ai-send-btn">שלח</button>
+      </div>
+      <div style="padding: 0 22px 12px; font-size: 12px; color: rgba(244,241,234,.4); font-family: -apple-system, sans-serif; direction: rtl;">
+        🎤 לחץ והתחל שיחה רציפה — קלוד יקשיב ויענה בקול. לחץ שוב להפסקה.
       </div>
     </div>
   </div>
@@ -4154,6 +4158,7 @@ renderWhenReady();
 
   function closeModal() {
     $('ai-modal-bg').classList.remove('open');
+    continuousMode = false;
     if (isRecording) stopRecording();
     if (isSpeaking) stopSpeaking();
   }
@@ -4187,6 +4192,10 @@ renderWhenReady();
     }
   }
 
+  // ─── Continuous-conversation mode flag ────────────
+  let continuousMode = false;
+  let speechPrimed = false;
+
   // ─── Speech Recognition (ASR) ───────────────────
   function initRecognition() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -4204,10 +4213,15 @@ renderWhenReady();
       setStatus('זיהוי קולי לא נתמך בדפדפן הזה');
       return;
     }
+    // Make sure we're not still speaking
+    if (isSpeaking) stopSpeaking();
+
     isRecording = true;
     $('ai-mic-btn').classList.add('recording');
     $('ai-mic-btn').querySelector('.mic-label').textContent = 'מקליט...';
     setStatus('🎤 מדבר...');
+    $('ai-text-input').value = '';
+
     let finalText = '';
     recognition.onresult = (event) => {
       let interim = '';
@@ -4220,18 +4234,22 @@ renderWhenReady();
       setStatus('🎤 ' + (finalText + interim));
     };
     recognition.onerror = (e) => {
-      setStatus('שגיאת הקלטה: ' + e.error);
+      setStatus('שגיאה: ' + e.error);
       stopRecording();
     };
     recognition.onend = () => {
       stopRecording();
       const text = $('ai-text-input').value.trim();
       if (text) sendMessage(text);
+      else if (continuousMode) {
+        // Empty result in continuous mode - wait briefly and listen again
+        setTimeout(() => { if (continuousMode && !isSpeaking) startRecording(); }, 500);
+      }
     };
     try {
       recognition.start();
     } catch(e) {
-      setStatus('לא ניתן להתחיל הקלטה');
+      setStatus('לא ניתן להקליט: ' + e.message);
       stopRecording();
     }
   }
@@ -4239,34 +4257,76 @@ renderWhenReady();
   function stopRecording() {
     isRecording = false;
     $('ai-mic-btn').classList.remove('recording');
-    $('ai-mic-btn').querySelector('.mic-label').textContent = 'דבר';
+    $('ai-mic-btn').querySelector('.mic-label').textContent = continuousMode ? 'הפסק שיחה' : 'דבר';
     if (recognition) {
       try { recognition.stop(); } catch(e){}
     }
   }
 
   // ─── Speech Synthesis (TTS) ──────────────────────
-  function speak(text) {
-    if (!('speechSynthesis' in window)) return;
-    stopSpeaking();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'he-IL';
-    u.rate = 1.0;
-    u.pitch = 1.0;
-    // Try to use a Hebrew voice if available
+  // iOS Safari quirk: need to "prime" speech synthesis with a silent utterance
+  // during a user gesture, then it works in later async contexts.
+  function primeSpeech() {
+    if (speechPrimed || !('speechSynthesis' in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance('');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+      speechPrimed = true;
+    } catch(e) {}
+  }
+
+  function pickHebrewVoice() {
+    if (!('speechSynthesis' in window)) return null;
     const voices = window.speechSynthesis.getVoices();
-    const heVoice = voices.find(v => v.lang && v.lang.startsWith('he'));
-    if (heVoice) u.voice = heVoice;
-    currentUtterance = u;
-    isSpeaking = true;
-    u.onend = () => { isSpeaking = false; currentUtterance = null; };
-    u.onerror = () => { isSpeaking = false; currentUtterance = null; };
-    window.speechSynthesis.speak(u);
+    // Prefer enhanced Hebrew voice
+    return voices.find(v => v.lang === 'he-IL' && /enhanced|premium|carmit/i.test(v.name))
+        || voices.find(v => v.lang === 'he-IL')
+        || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('he'))
+        || null;
+  }
+
+  function speak(text, onDone) {
+    if (!('speechSynthesis' in window) || !text) { onDone && onDone(); return; }
+    stopSpeaking();
+    // iOS Safari: cancel() needs a brief delay before speak() works
+    setTimeout(() => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'he-IL';
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+      const voice = pickHebrewVoice();
+      if (voice) u.voice = voice;
+      currentUtterance = u;
+      isSpeaking = true;
+      setStatus('🔊 קלוד מדבר...');
+      u.onend = () => {
+        isSpeaking = false;
+        currentUtterance = null;
+        setStatus('');
+        onDone && onDone();
+      };
+      u.onerror = (e) => {
+        isSpeaking = false;
+        currentUtterance = null;
+        setStatus('');
+        console.warn('TTS error', e);
+        onDone && onDone();
+      };
+      try {
+        window.speechSynthesis.speak(u);
+      } catch(e) {
+        console.warn('speak failed', e);
+        isSpeaking = false;
+        onDone && onDone();
+      }
+    }, 60);
   }
 
   function stopSpeaking() {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+      try { window.speechSynthesis.cancel(); } catch(e){}
       isSpeaking = false;
       currentUtterance = null;
     }
@@ -4324,7 +4384,12 @@ renderWhenReady();
       const reply = data.content && data.content[0] && data.content[0].text || '(תשובה ריקה)';
       updateLastMessage(reply);
       setStatus('');
-      speak(reply);
+      // Speak the reply, then auto-restart listening if in continuous mode
+      speak(reply, () => {
+        if (continuousMode) {
+          setTimeout(() => { if (continuousMode && !isRecording) startRecording(); }, 500);
+        }
+      });
     } catch (e) {
       updateLastMessage('שגיאת רשת: ' + (e.message || e));
       conversation[conversation.length - 1].error = true;
@@ -4360,16 +4425,32 @@ renderWhenReady();
       else closeModal();
     });
     $('ai-mic-btn').addEventListener('click', () => {
-      if (isRecording) stopRecording();
-      else if (isSpeaking) stopSpeaking();
-      else startRecording();
+      // Prime speech synthesis on first user gesture (iOS Safari requirement)
+      primeSpeech();
+      if (isRecording) {
+        // Currently listening → stop and exit continuous mode
+        continuousMode = false;
+        stopRecording();
+      } else if (isSpeaking) {
+        // Currently AI is speaking → stop it and exit continuous mode
+        continuousMode = false;
+        stopSpeaking();
+      } else {
+        // Start a new conversation in continuous mode
+        continuousMode = true;
+        startRecording();
+      }
     });
     $('ai-send-btn').addEventListener('click', () => {
+      primeSpeech();
+      continuousMode = false;  // text mode = single exchange, no auto-listen
       const txt = $('ai-text-input').value.trim();
       if (txt) sendMessage(txt);
     });
     $('ai-text-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        primeSpeech();
+        continuousMode = false;
         const txt = e.target.value.trim();
         if (txt) sendMessage(txt);
       }
