@@ -3,7 +3,7 @@
     {
       "name": "יובל",
       "weekly_plan": {
-        "שבת": [
+        "ראשון": [
           {
             "period": "3",
             "subject": "אנגלית",
@@ -19,13 +19,207 @@
             "date": "2026-05-17"
           }
         ],
-        "ראשון": [
+        "שני": [
           {
             "period": "4",
             "subject": "העשרה שפה",
             "teacher": "ימית רייכמן",
             "topic": "כתיבה בנושא שבועות",
             "date": "2026-05-18"
+          }
+        ]
+      },
+      "weekly_schedule": {
+        "ראשון": [
+          {
+            "period": "1",
+            "subject": "שפה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "שפה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "אנגלית",
+            "teacher": "אורית הלוי",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "אנגלית",
+            "teacher": "אורית הלוי",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מתמטיקה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "6",
+            "subject": "גאומטריה",
+            "teacher": "סמדר יונה",
+            "room": ""
+          }
+        ],
+        "שני": [
+          {
+            "period": "1",
+            "subject": "תנ``ך",
+            "teacher": "גדי גילי ג`ולייט",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "אומנות",
+            "teacher": "לויא אורלי",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מייקרס",
+            "teacher": "קריין רוני",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "העשרה שפה",
+            "teacher": "רייכמן ימית",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מייקרס",
+            "teacher": "קריין רוני",
+            "room": ""
+          }
+        ],
+        "שלישי": [
+          {
+            "period": "1",
+            "subject": "מתמטיקה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "מתמטיקה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "תנ``ך",
+            "teacher": "גדי גילי ג`ולייט",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          }
+        ],
+        "רביעי": [
+          {
+            "period": "1",
+            "subject": "שפה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "שבילי מורשת",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מחול",
+            "teacher": "חואזי מאי",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "כתיבה יוצרת",
+            "teacher": "פקר קאי",
+            "room": ""
+          }
+        ],
+        "חמישי": [
+          {
+            "period": "1",
+            "subject": "שפה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "שפה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מתמטיקה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "בשבילי מולדת",
+            "teacher": "פשרל חלי",
+            "room": ""
+          }
+        ],
+        "שישי": [
+          {
+            "period": "1",
+            "subject": "שפה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "מתמטיקה",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "אומנות",
+            "teacher": "לויא אורלי",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "מפתח הלב",
+            "teacher": "רביבו דנה",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "ערכים וכישורים לחיים",
+            "teacher": "רביבו דנה",
+            "room": ""
           }
         ]
       },
@@ -382,13 +576,14 @@
           "unread": false
         }
       ],
-      "last_updated": "2026-05-16T18:02:22.410673",
-      "error": null
+      "last_updated": "2026-05-16T21:05:10.323332",
+      "error": null,
+      "_schedule_debug": "days=6, lessons=30, skipped=0"
     },
     {
       "name": "רון",
       "weekly_plan": {
-        "שבת": [
+        "ראשון": [
           {
             "period": "1",
             "subject": "דרמה/שפה",
@@ -432,7 +627,7 @@
             "date": "2026-05-17"
           }
         ],
-        "ראשון": [
+        "שני": [
           {
             "period": "1",
             "subject": "שפה",
@@ -455,7 +650,7 @@
             "date": "2026-05-18"
           }
         ],
-        "שני": [
+        "שלישי": [
           {
             "period": "1",
             "subject": "דמוקרטיה",
@@ -499,7 +694,7 @@
             "date": "2026-05-19"
           }
         ],
-        "שלישי": [
+        "רביעי": [
           {
             "period": "1",
             "subject": "כתיבה יוצרת/קאי פקר",
@@ -529,7 +724,7 @@
             "date": "2026-05-20"
           }
         ],
-        "רביעי": [
+        "חמישי": [
           {
             "period": "1",
             "subject": "גאומטריה",
@@ -538,13 +733,249 @@
             "date": "2026-05-21"
           }
         ],
-        "חמישי": [
+        "שישי": [
           {
             "period": "2",
             "subject": "אנגלית",
             "teacher": "הלוי אורית",
             "topic": "",
             "date": "2026-05-22"
+          }
+        ]
+      },
+      "weekly_schedule": {
+        "ראשון": [
+          {
+            "period": "3",
+            "subject": "תנ``ך",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "גיאוגרפיה",
+            "teacher": "ענת עזרא",
+            "room": ""
+          },
+          {
+            "period": "6",
+            "subject": "היסטוריה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          }
+        ],
+        "שני": [
+          {
+            "period": "1",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "חינוך גופני",
+            "teacher": "רפאל סיגלית",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "אנגלית",
+            "teacher": "אורית הלוי",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "אנגלית",
+            "teacher": "אורית הלוי",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מתמטיקה",
+            "teacher": "סמדר יונה",
+            "room": ""
+          },
+          {
+            "period": "6",
+            "subject": "מתמטיקה",
+            "teacher": "סמדר יונה",
+            "room": ""
+          }
+        ],
+        "שלישי": [
+          {
+            "period": "1",
+            "subject": "בשבילי תרבות",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "אנגלית",
+            "teacher": "אורית הלוי",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "גיאוגרפיה",
+            "teacher": "ענת עזרא",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מחול",
+            "teacher": "חואזי מאי",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מתמטיקה",
+            "teacher": "סמדר יונה",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "6",
+            "subject": "מתמטיקה",
+            "teacher": "סמדר יונה",
+            "room": ""
+          }
+        ],
+        "רביעי": [
+          {
+            "period": "1",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "1",
+            "subject": "כתיבה יוצרת",
+            "teacher": "פקר קאי",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "היסטוריה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "חינוך גופני",
+            "teacher": "רפאל סיגלית",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "שמח אודליה",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "קוזק רבקה",
+            "room": ""
+          },
+          {
+            "period": "6",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          }
+        ],
+        "חמישי": [
+          {
+            "period": "1",
+            "subject": "גאומטריה",
+            "teacher": "סמדר יונה",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "מתמטיקה",
+            "teacher": "סמדר יונה",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "שמח אודליה",
+            "room": ""
+          },
+          {
+            "period": "3",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "קוזק רבקה",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "שמח אודליה",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מייקרס",
+            "teacher": "קריין רוני",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "מדע וטכנולוגיה",
+            "teacher": "קוזק רבקה",
+            "room": ""
+          },
+          {
+            "period": "5",
+            "subject": "מייקרס",
+            "teacher": "קריין רוני",
+            "room": ""
+          }
+        ],
+        "שישי": [
+          {
+            "period": "1",
+            "subject": "שפה",
+            "teacher": "ינקו איריס",
+            "room": ""
+          },
+          {
+            "period": "2",
+            "subject": "אנגלית",
+            "teacher": "אורית הלוי",
+            "room": ""
+          },
+          {
+            "period": "4",
+            "subject": "ערכים וכישורים לחיים",
+            "teacher": "ינקו איריס",
+            "room": ""
           }
         ]
       },
@@ -708,100 +1139,100 @@
       ],
       "messages": [
         {
-          "sender": "איריס ינקו",
-          "date": "2026-05-12",
-          "subject": "הודעת עדכון לגבי הטיול",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MMoYzTVVJqktkzYPdA5fCz3vrYjZePhnSrgEGWGjaj5c=",
+          "sender": "הלוי אורית",
+          "date": "2025-10-05",
+          "subject": "אנגלית שכבה ו- מיפוי תחילת שנה",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MNxtU4ooT982H9wDyCBco3kDulx64TAuqG9VL0a/rkKs=",
           "unread": false,
-          "body": "הורים ותלמידים יקרים,\nמצורפת הודעת עדכון לגבי הטיול.\nנפגשים מחר עם מצב רוח טוב.\nבברכה,\nאיריס"
+          "body": "הורים ותלמידים שלום רב \n\nמצורף דף מיקוד לקראת מבחן מיפוי \n\nבנוסף ישנם קישורים לתרגול מאתר גלים. \n\nחופשה מהנה \n\nוחג שמח \n\nאורית הלוי"
         },
         {
-          "sender": "רבקה קוזק",
-          "date": "2026-05-09",
-          "subject": "מבדק במדעים",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/Miw2jev3O+JOoCSF+R/MwkljRCU3rWa7zrGqejy6iuG8=",
+          "sender": "שרית זכריה",
+          "date": "2025-07-27",
+          "subject": "רשימת ציוד שכבת ו - תשפ\"ו",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MAZR5WvGaaIfbnx+MRSYrbmcVFNGhyIEeVhs3tI8bu5Q=",
           "unread": false,
-          "body": "תלמידים יקרים,\r\nבתאריך ה-27.5 ייערך מבדק במדעים בנושאים: מערכת אקולוגית וקשרי קיום (גורמי אור ומים).\r\nמצורפים עבורכם מחוון ודפי תרגול נוספים כדי לעזור לכם להתכונן בצורה הטובה ביותר. אנו נקיים שיעור חזרה גם בכיתה.\r\nמאמינה בכם ומאחלת לכולכם בהצלחה רבה!"
+          "body": "בברכה,\n\n שרית זכריה      \n\nמזכירת צוקים, שוהם"
         },
         {
-          "sender": "איריס ינקו",
-          "date": "2026-05-03",
-          "subject": "הודעה שהועברה: יום צילומים",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MoU+L0qzCKojjyag+sGblcUZar4qVDSoDz7D/OB2dJkI=",
+          "sender": "יונה סמדר",
+          "date": "2025-07-14",
+          "subject": "אקדמיק ניק משחקים בהנאה באתר גלים",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MAZR5WvGaaIfbnx+MRSYrbkgPbXhEmnqE4E9+aV9eUHk=",
           "unread": false,
-          "body": "היי,\nמתנצלת! מחר מגיעים בשעה 07:50 לבית הספר.\nאיריס\nמאת: ינקו איריס \nאל: אסאיג אביטל, אסאיג אלברט - אבי, אסיאג דניאל, אשכנזי נבו אופרי, אשכנזי נחשון, בן אברהם שלי, בן אריה נעמה, בן אריה שי, בן אריה שירי, בן משה גליה, בן משה הרצל, בן משה רון, בן נעים אוראלי, ברד דנה, ברד מוטי, ברד מוריה, ברמי אמה יערה, גדות אורית, גדות מיה, גדות עידו, גונה בנימין, גונן ליבי, גינזבורג ניר, גינזבורג רון, גרין איתי, גרין יואב, גרין עינת, הרשקו ליהיא, הרשקו קרנית, הרשקו שי, וייס איתמר, ויס אופיר, זלמן טלי, חביב בר, חביב טל, להרר אוהד, לוי ניצן תם, לרר תמיר, מויאל מיטל, מויאל עומר, מויאל צחי, מימון מורן (מי, מעבי אביב, מעבי דניאל, מרקוס גיל, מרקוס יובל, מרקוס ליטל, סבן אלהודי, סבן יוסף, סוכובסקי עדי, סריג נעה, סריוגין פיליפ, פולק זאב, פולק תום, פרחי טל, פרחי יוני, פרחי עידו, פרץ אבי, פרץ אורית, פרץ עמית, קדוש מוטי, קדוש מלכה מלי, קדוש שירה, קוסטין אביב, קוסטין איה, קוסטין סטיבן, קורן אביתר, קורן ענבל, קורן שלומי, קריב איתמר, קריב נעמה, קריב שניר, רפאל גונן אפרת, שוורץ רותי, שטיינשניט אוהד, שטיינשניט אלה, שינא אביטל, שינא יחזקאל, שינא עידו, שלו נועה, שמש אבישי, שמש גאיה, שמש מורן, שפירא טל, תמים אירית, תמים נועם חיי, תמים רביד \n03/05/2026 17:16 \nיום צילומים\n\nשלום לכולם🌸\nמזכירה - כולנו בהתרגשות מחר ליום צילומים לספר מחזור.\nכולם מגיעים בחולצה לבנה עם סמל, מכנס ארוך (שחור/כחול), עם האביזרים לצילום בשעה 08:50. אפשר להביא בשקית מכנס להחלפה.\nמגיעים עם מערכת רגילה. בנוסף אבקש לשלוח עם הילדים את הפולדרים של התעודות.\nתודה ובהצלחה לכולנו🙏🏻🙏🏻\nבברכה, איריס"
+          "body": "כחלק מהמינוי לגלים פרו, התלמידים שלכם יכולים להיכנס ל\"ניק אקדמי\" – אפליקציית משחקים צבעונית וכיפית שמלמדת דרך משחק, נושאים כמו מדע, חלל, מתמטיקה ותכנות מוצגים בצורה חווייתית, בעזרת שלבים, משימות, פרסים וחדרי בריחה דיגיטליים – והכול מותאם לגילאי 6–12.\n\nזו דרך מצוינת להמשיך לחשוב, לגלות, וליהנות – גם בחופש 🙂\nמוזמנים להזכיר לתלמידים שיש להם גישה דרך גלים פרו ולעודד אותם להיכנס, לשחק ולגלות עולמות חדשים!\nהכנסו לאתר גלים וחפשו הנחה לניק אקדמי"
         },
         {
-          "sender": "איריס ינקו",
-          "date": "2026-05-03",
-          "subject": "יום צילומים",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MoU+L0qzCKojjyag+sGblcUIrkbPucKy0lqewEDGciXs=",
+          "sender": "יונה סמדר",
+          "date": "2025-07-14",
+          "subject": "שחמט בגלים לחופש הגדול",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MAZR5WvGaaIfbnx+MRSYrbrN8g02d427OEadGK+IL+zY=",
           "unread": false,
-          "body": "שלום לכולם🌸 \nמזכירה - כולנו בהתרגשות מחר ליום צילומים לספר מחזור. \nכולם מגיעים בחולצה לבנה עם סמל, מכנס ארוך (שחור/כחול), עם האביזרים לצילום בשעה 08:50. אפשר להביא בשקית מכנס להחלפה. \nמגיעים עם מערכת רגילה. בנוסף אבקש לשלוח עם הילדים את הפולדרים של התעודות. \nתודה ובהצלחה לכולנו🙏🏻🙏🏻 \nבברכה, איריס"
-        },
-        {
-          "sender": "איריס ינקו",
-          "date": "2026-05-03",
-          "subject": "יום צילומים",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MoU+L0qzCKojjyag+sGblcV8by5j+q+KCCKEGJ2sVhWA=",
-          "unread": false,
-          "body": "שלום לכולם🌸\nמזכירה - כולנו בהתרגשות מחר ליום צילומים לספר מחזור. כולם מגיעים בחולצה לבנה עם סמל, מכנס ארוך (שחור/כחול), עם האביזרים לצילום *בשעה 08:50*.\nאפשר להביא בשקית מכנס להחלפה. \nמגיעים עם מערכת רגילה. \n\nבנוסף אבקש לשלוח עם הילדים את הפולדרים של התעודות. \n\nתודה ובהצלחה לכולנו🙏🏻🙏🏻\nבברכה, \nאיריס"
+          "body": "כשמתחיל החופש הגדול, למה לא לתת לתלמידים הזדמנות להמשיך להמריא עם אתגרים מהנים?\n\n \"צ’ס מג’יק\" מחכה להם עם משחקי שחמט מלאי עניין, אוואטרים, פרסים ואתגרים – חוויה מהנה שמפתחת חשיבה אסטרטגית ויכולת פתרון בעיות, בלי שהתלמידים שמים לב שהם לומדים.\n\n📍 זמינה לתלמידי גלים פרו – פשוט נכנסים ומשחקים.\nקישור- https://app.chess-m.com/signup"
         },
         {
           "sender": "איריס ינקו",
-          "date": "2026-05-03",
-          "subject": "יום צילומים",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MoU+L0qzCKojjyag+sGblcbRYlpFCtFWUAZ05eIamBzM=",
+          "date": "2025-05-05",
+          "subject": "מיקוד למבחן במדעים",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MbMiLZMKJCNbdTktQ51C47zOGky821oPM+ebzR5TmCvI=",
           "unread": false,
-          "body": "שלום לכולם🌸\nמזכירה - כולנו בהתרגשות מחר ליום צילומים לספר מחזור. כולם מגיעים בחולצה לבנה עם סמל, מכנס ארוך (שחור/כחול), עם האביזרים לצילום *בשעה 08:50*.\nאפשר להביא בשקית מכנס להחלפה. \nמגיעים עם מערכת רגילה. \n\nבנוסף אבקש לשלוח עם הילדים את הפולדרים של התעודות. \n\nתודה ובהצלחה לכולנו🙏🏻🙏🏻\nבברכה, \nאיריס"
+          "body": "שלום לכולם,\n\nמצרפת גם כאן את המיקוד למבחן במדעים. חלק קיבלו ממני ביום הורים וחלק קיבלו אתמול.\n\nבנוסף מעדכנת שאתמול נעשתה חזרה בכיתה על פי המיקוד.\n\nבהצלחה!\n\nאיריס"
         },
         {
-          "sender": "איריס ינקו",
-          "date": "2026-04-28",
-          "subject": "מבדק בתנ&quot;ך",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MJNJiBdFoHtX4jSXL2BwMnOaMtsSQ0WsnZGDR7OFdYMk=",
+          "sender": "יונה סמדר",
+          "date": "2025-05-04",
+          "subject": "עדכון חוברות הלימוד כיתה ה1 מתמטיקה לפי ימי השבוע",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MbMiLZMKJCNbdTktQ51C470q8mdzb4MxjL4l2jrYbLvI=",
           "unread": false,
-          "body": "שלום לכולם,\n\nמחר  29.4.2026 ייערך מבדק בתנ\"ך.\nעל מנת להקל על התלמידים פרק ז' לא יכלל במבחן.\nבהצלחה לכולם!\nאיריס"
+          "body": "שלום רב,\n\nהחל מהשבוע הבא המתחיל בתאריך 11/5/25 נלמד בחוברות שלהלן בימים הבאים:\n\nימי ראשון ושני- גיאומטריה\n\nיום שלישי- עשרוניים\n\nיום רביעי טבעיים.\n\nלמידה נעימה\n\nנא הקפידו ושתפו פעולה למען שגרת הלמידה וההתקדמות של הילדים.\n\nתודה\n\nסמדר"
         },
         {
-          "sender": "איריס ינקו",
-          "date": "2026-04-24",
-          "subject": "הודעה שבועית 24.4.2026",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MAeseak8f6olXE2w+QRQPU2GyRGOPP1zawUaXluIF/FE=",
+          "sender": "יונה סמדר",
+          "date": "2025-05-04",
+          "subject": "מבחן מתמטיקה סוף שנה כיתה ה1",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MbMiLZMKJCNbdTktQ51C470+RROLuyn+o1fgr1jWAsPk=",
           "unread": false,
-          "body": "שלום לכולם,\n\nמצרפת הודעה שבועית.\nשבת שלום,\nאיריס"
-        },
-        {
-          "sender": "איריס ינקו",
-          "date": "2026-04-12",
-          "subject": "מבחן בתנ&quot;ך - שכבת ו&#39;",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MniyxZcPMnY6sTwwBb2pSYioLO1AFVdx02eE9CE/+w3Y=",
-          "unread": false,
-          "body": "שלום לכולם,\n\nמקווה שכולכם בטוב🙏\nהמבחן בתנ\"ך יתקיים ביום רביעי 29.4.2026.\nמצרפת מיקוד למבחן.\nהתחלנו חזרה למבחן בתנ\"ך כבר מהיום.\nבהצלחה לכולנו,\nבברכה,\nאיריס"
-        },
-        {
-          "sender": "איריס ינקו",
-          "date": "2026-04-12",
-          "subject": "מבחן בהיסטוריה",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MniyxZcPMnY6sTwwBb2pSYp4C5akms6gNUhsm08IWWHM=",
-          "unread": false,
-          "body": "שלום לכולם,\n\nמצרפת מיקוד למבחן בהיסטוריה שיתקיים בתאריך 20.4.\nהתחלנו היום חזרה למבחן, ואנחנו נמשיך במהלך השבוע.\nבהצלחה לכולנו,\nאיריס"
-        },
-        {
-          "sender": "איריס ינקו",
-          "date": "2026-04-10",
-          "subject": "הודעה שבועית ולוח מבחנים מעודכן",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MYOzbkewjMexPWGsA0cTj8KUCRAfoiAJuv2dV6jlftwo=",
-          "unread": false,
-          "body": "שלום לכולם,\nמקווה שכולם בטוב.🙏\nמצורפת הודעה שבועית ולוח מבחנים מעודכן לתאריך 10.4.\nבהצלחה לכולנו וחזרה בטוחה לכולנו.🙏🙏\nבברכה,\nאיריס"
+          "body": "שלום רב,\r\nבתאריך 28.5.25 יתקיים מבחן מתמטיקה סוף שנה בכיתה ה'1 בנושאים הבאים:\r\n\nפתרון תרגילי שברים פשוטים בחיבור ובחיסור כולל המרה.\n\nחלק מכמות בשברים- משמעות המונה והמכנה בנושא זה.\n\nקריאה והבנה של מספרים עשרוניים.\n\nקריאה והבנה של ממספרים עשרוניים על ישר המספרים.\n\nפעולות החיבור והחיסור במספרים עשרוניים.\n\nהקשר בין שבר פשוט לעשרוני באמצעות הרחבה למכנה 10,100 וכו'.\n\nגיאומטריה-\n\nמושג הגובה- זיהוי ושרטוט.\n\nפתרון משימות שטח במקבילית ובמלבן.\n\nניתן להיעזר בתרגול בחוברות הלימוד, אתר וויזדי בפעילויות השונות, כמו גם אפק וגלים.\r\nדפי תרגול קיימים גם באתר תרגולון ובאתר קרנפים.\r\n\nבהצלחה לכולנו\r\nסמדר"
         },
         {
           "sender": "הלוי אורית",
-          "date": "2026-04-10",
-          "subject": "אנגלית - תאריך מבחן",
-          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MYOzbkewjMexPWGsA0cTj8OPAB0WeR+dZ0ir5AT0GxDs=",
+          "date": "2025-04-29",
+          "subject": "תגובה ל: אנגלית כיתה ה  - מיקוד למבחן",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/Mlokqjx7Py5oyY7eE8pO9KjsqBs5Vx4yCSUloThIpy1A=",
           "unread": false,
-          "body": "הורים ותלמידים יקרים שלום רב \n\nתאריך המבחן באנגלית :\n\nכיתה ו1 - 17/4 - יום שישי\n\nכיתה ו2 - 16/4 - יום חמישי \n\nשבת שלום \n\nאורית"
+          "body": "שלום רב \n\nאני נאלצת לשנות את תאריך המבחן עבור כיתה ה2\n\n2 כיתות ה יבחנו ביום ראשון 11/5 - במהלך שיעור אנגלית על פי המערכת . \n\nעימכם הסליחה \n\nאורית \n\nבתאריך:\r\n\n29/04/2025 (08:47)\r\n\nנושא:\r\n\nאנגלית כיתה ה - מיקוד למבחן\r\n\nמאת:\r\n\nאורית הלוי\r\n\nאל:\r\n\nנמעני הודעה זו\r\n\nהורים ותלמידים יקרים \n\nאנא קראו בעיון את הקובץ . \n\nבהצלחה\n\nאורית"
+        },
+        {
+          "sender": "הלוי אורית",
+          "date": "2025-04-29",
+          "subject": "אנגלית כיתה ה  - מיקוד למבחן",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MLuU/8aO9UPkIYEYZheqOxO1DFvnAXWirWFFlM+vs0AE=",
+          "unread": false,
+          "body": "הורים ותלמידים יקרים \n\nאנא קראו בעיון את הקובץ . \n\nבהצלחה\n\nאורית"
+        },
+        {
+          "sender": "איריס ינקו",
+          "date": "2025-04-09",
+          "subject": "מיקוד למבחן בגיאוגרפיה",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MDNR9SIS9+sasKlXaKn9dsbuZ+AHSAsZccXVbLJMBClQ=",
+          "unread": false,
+          "body": "ילדים יקרים,\n\nמקווה שכולכם בטוב.\n\nמצרפת לכאן את המיקוד למבחן בגיאוגרפיה שיתקיים ביום שישי  בתאריך 25.4.2025.\n\nבמידה ועולות שאלות נוספות, אתם מוזמנים לפנות אלי.\n\nההודעה נשלחה גם להורים.\n\nבהצלחה רבה,\n\nוהמשך חופשה נעימה\n\nאיריס"
+        },
+        {
+          "sender": "איריס ינקו",
+          "date": "2025-03-22",
+          "subject": "מיקוד למבחן בתנ&quot;ך - מחצית ב&#39;",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MvE1bXXbNyLJRFVaTmA0GI1kQaWanRHptId9RYBsY2H0=",
+          "unread": false,
+          "body": "ילדים והורים יקרים,\n\nמצורף בזה מיקוד למבחן בתנ\"ך שיתקיים ב-28.3.\n\nעשינו חזרה למבחן ביום שישי ונעשה חזרה נוספת במהלך השבוע.\n\nבהצלחה לכולנו!\n\nאיריס"
+        },
+        {
+          "sender": "יונה סמדר",
+          "date": "2025-03-13",
+          "subject": "תזכורת! הבאת חוברת עשרוניים כיתה ה'1",
+          "id": "mjILC8pDLLiSdBlF3jNnBtFLXW0TQuH1Lg3awXMpqEGkexMIqsqSYaC9F+qQ1t/MC1vJnXgPaMrRE8+qY369MXY8wADJ4wNYc4t/6NSXgVs=",
+          "unread": false,
+          "body": "שלום רב,\n\nזוהי תזכורת.\n\nביום שלישי הבא, 18.3.25,  נתחיל ללמוד בחוברת עשרוניים. נא היערכותכם בהבאת הציוד הנדרש.\n\nתודה וחג שמח\n\nסמדר"
         }
       ],
       "notifications": [
@@ -934,10 +1365,11 @@
           "unread": false
         }
       ],
-      "last_updated": "2026-05-16T18:03:36.938345",
-      "error": null
+      "last_updated": "2026-05-16T21:07:12.779190",
+      "error": null,
+      "_schedule_debug": "days=6, lessons=37, skipped=0"
     }
   ],
-  "generated_at": "2026-05-16T18:02:20.959855",
+  "generated_at": "2026-05-16T21:05:08.054298",
   "status": "ok"
 }
