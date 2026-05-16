@@ -127,7 +127,20 @@ body, .app {
 </head>
 <body>
 
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  var d = document.getElementById('errdisplay');
+  if (d) {
+    d.style.display = 'block';
+    d.textContent = 'JS ERROR:\n' + msg + '\n\nFile: ' + src + '\nLine: ' + line + '\n\n' + (err && err.stack ? err.stack : '');
+  }
+  var loader = document.getElementById('loader');
+  if (loader) loader.style.display = 'none';
+  return false;
+};
+</script>
 <div id="stage"><div id="scaler"><div id="root"></div></div></div>
+<div id="errdisplay" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0d14;color:#ff6b6b;padding:30px;font-family:monospace;font-size:12px;overflow:auto;direction:ltr;white-space:pre-wrap"></div>
 <div id="loader" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0d14;z-index:9999;color:#f4f1ea;font-family:serif;font-size:32px;letter-spacing:.1em;">
   טוען...
 </div>
@@ -235,11 +248,14 @@ async function loadFamilyData() {
   }
 
   function mapKid(kidData, kidName, initial, grade, gradeEn) {
+    const emptyNow = { time: '--:--', name: '—', room: '' };
+    const emptyTest = { subj: '', topic: '', days: 0 };
+
     if (!kidData) {
       return {
         name: kidName, initial, grade, en: gradeEn,
-        now: null, next: [], homework: [],
-        test: null, lessonEvents: []
+        now: emptyNow, next: [], homework: [],
+        test: emptyTest, lessonEvents: [], weeklyPlan: []
       };
     }
 
@@ -299,10 +315,10 @@ async function loadFamilyData() {
 
     return {
       name: kidName, initial, grade, en: gradeEn,
-      now: nowLesson,
+      now: nowLesson || emptyNow,
       next: nextLessons,
       homework,
-      test: null,
+      test: emptyTest,
       lessonEvents,
       weeklyPlan: kidData.weekly_plan || [],
     };
@@ -1951,16 +1967,21 @@ function renderWhenReady() {
       shabbat: { candleLighting: '--:--', havdalah: '--:--', parasha: '', daysAway: 0, todayIs: 'other' },
       briefing: [{ type: 'text', value: 'בוקר טוב למשפחה!' }],
       todayEvents: [], week: [], events: [], notes: [], photos: [], shopping: [], recipes: [], recipeCats: [],
-      ron: { name: 'רון', initial: 'ר', grade: 'כיתה ו׳', en: 'GRADE 6', now: null, next: [], homework: [], test: null, lessonEvents: [] },
-      yuval: { name: 'יובל', initial: 'י', grade: 'כיתה ב׳', en: 'GRADE 2', now: null, next: [], homework: [], test: null, lessonEvents: [] },
+      ron: { name: 'רון', initial: 'ר', grade: 'כיתה ו׳', en: 'GRADE 6', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:0}, lessonEvents: [], weeklyPlan: [] },
+      yuval: { name: 'יובל', initial: 'י', grade: 'כיתה ב׳', en: 'GRADE 2', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:0}, lessonEvents: [], weeklyPlan: [] },
       presence: [], holiday: null, history: { year: '', text: '' },
     };
   }
   try {
+    const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App/>);
   } catch(err) {
     console.error('Render error:', err);
-    document.getElementById('root').innerHTML = '<div style="color:#ff6b6b;padding:20px;font-family:monospace">' + err.message + '</div>';
+    hideLoader();
+    document.getElementById('root').innerHTML = 
+      '<div style="color:#ff6b6b;padding:40px;font-family:monospace;font-size:14px;direction:ltr;white-space:pre-wrap">' +
+      '<b>RENDER ERROR:</b>\n' + err.message + '\n\n' + (err.stack || '') +
+      '</div>';
   }
   setTimeout(hideLoader, 500);
 }
