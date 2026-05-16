@@ -311,7 +311,7 @@ def parse_homework(captured):
     return homework
 
 def parse_messages(captured):
-    """GetMessagesInbox.data[] -> subject, sendingDate, student_F/L_name"""
+    """GetMessagesInbox.data[] -> subject, sendingDate, student_F/L_name, body if available"""
     msgs = []
     raw = captured.get("GetMessagesInbox", {})
     items = raw.get("data", [])
@@ -323,11 +323,67 @@ def parse_messages(captured):
         subj   = str(item.get("subject",""))
         msg_id = item.get("messageID") or item.get("messageId") or item.get("id") or ""
         is_new = bool(item.get("isNew") or item.get("isUnread") or item.get("unread"))
+        # Body might come in various fields
+        body   = str(item.get("body") or item.get("messageBody") or item.get("text") or item.get("content") or "")
         msgs.append({
             "sender": sender, "date": date, "subject": subj,
-            "id": str(msg_id), "unread": is_new,
+            "id": str(msg_id), "unread": is_new, "body": body,
         })
     return msgs
+
+async def fetch_message_bodies(page, messages):
+    """For each message without a body, fetch its details via Webtop API.
+    Webtop pattern: GET .../GetMessage?messageID=... or similar.
+    We try a few common endpoints and capture the response."""
+    if not messages:
+        return messages
+    for msg in messages:
+        if msg.get("body") and len(msg["body"]) > 20:
+            continue  # already have body
+        mid = msg.get("id")
+        if not mid:
+            continue
+        try:
+            body_data = await page.evaluate("""
+                async (msgId) => {
+                    const tryUrls = [
+                        `/server/api/messages/GetMessageDetails?messageID=${encodeURIComponent(msgId)}`,
+                        `/server/api/messages/GetMessage?messageID=${encodeURIComponent(msgId)}`,
+                        `/server/api/inbox/GetMessage?messageID=${encodeURIComponent(msgId)}`,
+                        `/server/api/messages/GetMessageContent?messageID=${encodeURIComponent(msgId)}`,
+                    ];
+                    for (const path of tryUrls) {
+                        try {
+                            const url = 'https://webtopserver.smartschool.co.il' + path;
+                            const r = await fetch(url, {
+                                method: 'GET',
+                                credentials: 'include',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'language': 'he',
+                                    'X-XSRF-TOKEN': '',
+                                },
+                            });
+                            if (r.ok) {
+                                const j = await r.json();
+                                return j;
+                            }
+                        } catch(e) {}
+                    }
+                    return null;
+                }
+            """, mid)
+            if body_data:
+                # try to extract body from common shapes
+                d = body_data.get("data") if isinstance(body_data, dict) else None
+                if isinstance(d, dict):
+                    body = (d.get("body") or d.get("messageBody") or d.get("content")
+                            or d.get("text") or d.get("messageText") or "")
+                    if body:
+                        msg["body"] = str(body)
+        except Exception:
+            pass
+    return messages
 
 def parse_notifications(captured, cdk_fallback=None):
     """Parse notifications - try several known shapes, fall back to table scrape."""
@@ -429,7 +485,13 @@ async def scrape_student(browser, username, password, name):
         cap = await intercept_nav(page, BASE+"/Messages",
             keywords=["GetMessagesInbox","MessagesInbox","Inbox"], extra_wait=4)
         data["messages"] = parse_messages(cap)
-        print(f"  -> {len(data['messages'])} messages")
+        # Fetch full bodies (may not work depending on Webtop API)
+        try:
+            data["messages"] = await fetch_message_bodies(page, data["messages"])
+            with_body = sum(1 for m in data["messages"] if m.get("body"))
+            print(f"  -> {len(data['messages'])} messages ({with_body} with body)")
+        except Exception as e:
+            print(f"  -> {len(data['messages'])} messages (body fetch failed: {e})")
 
         # Notifications
         print("  [notifications]")

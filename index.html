@@ -1640,6 +1640,30 @@ async function loadFamilyData() {
     const sunset = wd.sunset?.[0] ? wd.sunset[0].slice(11,16) : '--:--';
     const sunrise = wd.sunrise?.[0] ? wd.sunrise[0].slice(11,16) : '--:--';
 
+    // Clothing tip based on temp + conditions
+    const minToday = Math.round(wd.temperature_2m_min?.[0] || 0);
+    const maxToday = Math.round(wd.temperature_2m_max?.[0] || 0);
+    const isRainy = (wc.weather_code || 0) >= 50;
+    const isWindy = (wc.wind_speed_10m || 0) >= 25;
+    let tip = '';
+    if (isRainy) {
+      tip = '☔ מומלץ לקחת מטרייה ומעיל';
+    } else if (maxToday >= 30) {
+      tip = '🥵 חם מאוד — בגדים קלים, כובע ובקבוק מים';
+    } else if (maxToday >= 25) {
+      tip = '😎 חם — חולצה קצרה ומכנסיים קלים';
+    } else if (maxToday >= 18) {
+      tip = '🌤️ נעים — חולצה ארוכה מספיקה';
+    } else if (maxToday >= 12) {
+      tip = '🧥 קריר — סווצ׳ר או מעיל קל';
+    } else if (maxToday >= 5) {
+      tip = '🧥 קר — מעיל חם, נדרש שכבות';
+    } else {
+      tip = '🥶 קר מאוד — מעיל כבד, כפפות וכובע';
+    }
+    if (minToday < 14 && maxToday >= 22) tip += ' (בוקר קריר!)';
+    if (isWindy) tip += ' · רוח חזקה';
+
     data.weather = {
       nowC: Math.round(wc.temperature_2m),
       feels: Math.round(wc.apparent_temperature),
@@ -1648,7 +1672,8 @@ async function loadFamilyData() {
       icon: iconMap(wc.weather_code),
       desc: wc.weather_code < 3 ? 'בהיר' : wc.weather_code < 50 ? 'מעונן' : 'גשום',
       sunrise, sunset,
-      today: { hi: Math.round(wd.temperature_2m_max?.[0] || 0), lo: Math.round(wd.temperature_2m_min?.[0] || 0), icon: iconMap(wd.weather_code?.[0] || 0) },
+      tip,
+      today: { hi: maxToday, lo: minToday, icon: iconMap(wd.weather_code?.[0] || 0) },
       tomorrow: { hi: Math.round(wd.temperature_2m_max?.[1] || 0), lo: Math.round(wd.temperature_2m_min?.[1] || 0), icon: iconMap(wd.weather_code?.[1] || 0) },
     };
   } catch(e) {
@@ -1877,15 +1902,31 @@ async function loadFamilyData() {
     mood: nextHol.daysAway <= 3 ? 'very-soon' : nextHol.daysAway <= 14 ? 'soon' : 'far',
   } : null;
 
-  // ── 8. History fact ──────────────────────────────────────
+  // ── 8. History fact (On This Day from Hebrew Wikipedia) ──
   try {
-    const wikiUrl = `https://he.wikipedia.org/api/rest_v1/page/summary/${M}_${D}`;
-    const wiki = await fetch(wikiUrl).then(r=>r.json());
-    data.history = {
-      year: '',
-      text: wiki.extract ? wiki.extract.slice(0, 200) : 'יום מיוחד בהיסטוריה',
-    };
+    const otdUrl = `https://he.wikipedia.org/api/rest_v1/feed/onthisday/events/${M}/${D}`;
+    const otd = await fetch(otdUrl).then(r=>r.json());
+    let pick = null;
+    if (otd && Array.isArray(otd.events) && otd.events.length > 0) {
+      // Pick an event with a reasonable year (avoid super-ancient)
+      const recent = otd.events.filter(e => e.year && e.year >= 1900 && e.text && e.text.length > 20);
+      const pool = recent.length > 0 ? recent : otd.events;
+      pick = pool[Math.floor(Math.random() * pool.length)];
+    }
+    if (pick && pick.text) {
+      data.history = {
+        year: String(pick.year || ''),
+        text: pick.text.slice(0, 260),
+      };
+    } else {
+      // Fallback to summary page
+      const heMonths = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+      const title = `${today.getDate()}_ב${heMonths[today.getMonth()]}`;
+      const wiki = await fetch(`https://he.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`).then(r=>r.json());
+      data.history = { year: '', text: (wiki.extract || 'יום מיוחד בהיסטוריה').slice(0, 260) };
+    }
   } catch(e) {
+    console.warn('history error', e);
     data.history = { year: '', text: 'יום מיוחד בהיסטוריה.' };
   }
 
@@ -2723,7 +2764,7 @@ function HomeScreen({ now, pinnedIds }) {
               <div className="flame"/>
             </div>
             <div className="sh-times">
-              <div className="w-label">שבת · נתניה</div>
+              <div className="w-label">שבת · שוהם</div>
               <div className="sh-time-row"><span className="val">{F.shabbat.candleLighting}</span><span className="lbl">הדלקת נרות</span></div>
               <div className="sh-time-row"><span className="val" style={{fontSize:18,color:'rgba(255,210,138,.75)'}}>{F.shabbat.havdalah}</span><span className="lbl">צאת השבת</span></div>
             </div>
@@ -3524,7 +3565,7 @@ renderWhenReady();
   padding: 18px 22px;
   border-bottom: 1px solid rgba(244,241,234,.08);
 }
-.wb-title { color: #f4f1ea; font-size: 20px; font-weight: 500; }
+.wb-title { color: #f4f1ea; font-size: 22px; font-weight: 500; }
 .wb-close {
   background: rgba(244,241,234,.08);
   border: none; color: #f4f1ea;
@@ -3542,9 +3583,9 @@ renderWhenReady();
   background: rgba(244,241,234,.06);
   border: 1px solid transparent;
   border-radius: 10px;
-  padding: 8px 14px;
+  padding: 10px 16px;
   color: rgba(244,241,234,.7);
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   cursor: pointer;
   display: flex; align-items: center; gap: 8px;
@@ -3575,7 +3616,7 @@ renderWhenReady();
   background: rgba(244,241,234,.04);
   border: 1px solid rgba(244,241,234,.06);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   margin-bottom: 8px;
   cursor: pointer;
   transition: all .12s;
@@ -3596,18 +3637,19 @@ renderWhenReady();
   gap: 12px;
   margin-bottom: 4px;
 }
-.wb-item-title { color: #f4f1ea; font-size: 15px; font-weight: 500; flex: 1; }
-.wb-item-date { color: rgba(244,241,234,.5); font-size: 12px; font-family: -apple-system, sans-serif; white-space: nowrap; }
-.wb-item-meta { color: rgba(244,241,234,.6); font-size: 13px; margin-top: 4px; }
+.wb-item-title { color: #f4f1ea; font-size: 17px; font-weight: 500; flex: 1; line-height: 1.4; }
+.wb-item-date { color: rgba(244,241,234,.5); font-size: 14px; font-family: -apple-system, sans-serif; white-space: nowrap; }
+.wb-item-meta { color: rgba(244,241,234,.7); font-size: 15px; margin-top: 6px; }
 .wb-item-body {
-  color: rgba(244,241,234,.75);
-  font-size: 14px; margin-top: 10px;
+  color: rgba(244,241,234,.85);
+  font-size: 16px; margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(244,241,234,.06);
   display: none;
   line-height: 1.5;
 }
 .wb-item.expanded .wb-item-body { display: block; }
+.wb-no-body { color: rgba(244,241,234,.4) !important; font-style: italic; font-size: 14px !important; }
 .wb-empty {
   text-align: center; padding: 40px 20px;
   color: rgba(244,241,234,.45);
@@ -3752,16 +3794,26 @@ renderWhenReady();
       const isItemNew = isNew(kidName, kind, item);
       div.className = 'wb-item' + (isItemNew ? ' new' : '');
 
-      const title = kind === 'msg' ? (item.subject || '(ללא נושא)') : (item.title || '(התראה)');
+      // For notifications: title is often empty, so use body as the main display
+      let title, body;
+      if (kind === 'msg') {
+        title = item.subject || '(ללא נושא)';
+        body = item.body || '';
+      } else {
+        // Notifications: prefer title; fall back to body as title
+        title = item.title && item.title.trim() ? item.title : (item.body || '(התראה)');
+        body = (item.title && item.body && item.title !== item.body) ? item.body : '';
+      }
       const meta = kind === 'msg' ? (item.sender || '') : (item.type || '');
-      const body = kind === 'notif' ? (item.body || '') : '';
       const date = item.date || '';
 
-      // Format date as DD/MM
       let dateStr = '';
       if (date && date.length >= 10) {
         dateStr = `${date.slice(8,10)}/${date.slice(5,7)}`;
       }
+
+      const hasBody = body && body.trim().length > 0;
+      const expandable = hasBody || kind === 'msg';
 
       div.innerHTML = `
         <div class="wb-item-head">
@@ -3769,13 +3821,12 @@ renderWhenReady();
           <div class="wb-item-date">${dateStr}</div>
         </div>
         ${meta ? `<div class="wb-item-meta">${escapeHtml(meta)}</div>` : ''}
-        ${body ? `<div class="wb-item-body">${escapeHtml(body)}</div>` : ''}
+        ${hasBody ? `<div class="wb-item-body">${escapeHtml(body)}</div>` : ''}
+        ${kind === 'msg' && !hasBody ? `<div class="wb-item-body wb-no-body">לחץ ׳פתח Webtop׳ למטה כדי לקרוא את ההודעה המלאה</div>` : ''}
       `;
 
       div.addEventListener('click', () => {
-        // toggle expand if there's body content
-        if (body) div.classList.toggle('expanded');
-        // mark as seen
+        if (expandable) div.classList.toggle('expanded');
         if (isItemNew) {
           markSeen(kidName, kind, item);
           div.classList.remove('new');
@@ -3797,12 +3848,35 @@ renderWhenReady();
     document.getElementById('wb-modal-bg').classList.remove('open');
   }
 
+  function syncFromWebtop() {
+    // If Webtop API says unread=false → mark as seen automatically
+    const F = window.FAMILY;
+    if (!F) return;
+    let changed = false;
+    for (const kid of [F.ron, F.yuval]) {
+      for (const m of (kid.messages || [])) {
+        if (m.unread === false) {
+          const k = itemKey(kid.name, 'msg', m);
+          if (!seen[k]) { seen[k] = Date.now(); changed = true; }
+        }
+      }
+      for (const n of (kid.notifications || [])) {
+        if (n.unread === false) {
+          const k = itemKey(kid.name, 'notif', n);
+          if (!seen[k]) { seen[k] = Date.now(); changed = true; }
+        }
+      }
+    }
+    if (changed) saveSeen();
+  }
+
   function init() {
     document.getElementById('wb-fab').addEventListener('click', openModal);
     document.getElementById('wb-close-btn').addEventListener('click', closeModal);
     document.getElementById('wb-modal-bg').addEventListener('click', (e) => {
       if (e.target.id === 'wb-modal-bg') closeModal();
     });
+    syncFromWebtop();
     refreshFab();
   }
 
@@ -3812,6 +3886,89 @@ renderWhenReady();
       init();
     }
   }, 200);
+})();
+</script>
+
+
+<!-- Clothing tip chip -->
+<style>
+#wt-tip {
+  position: fixed; top: 14px; left: 14px; z-index: 8500;
+  background: linear-gradient(135deg, rgba(20,25,38,.88), rgba(30,35,55,.88));
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(244,241,234,.12);
+  border-radius: 14px;
+  padding: 10px 16px;
+  font-family: 'Frank Ruhl Libre', serif;
+  color: #f4f1ea;
+  font-size: 15px;
+  direction: rtl;
+  box-shadow: 0 6px 20px rgba(0,0,0,.4);
+  max-width: 340px;
+  display: none;
+}
+#wt-tip.show { display: block; }
+#wt-tip-label {
+  font-size: 11px; color: rgba(244,241,234,.5);
+  letter-spacing: .15em; text-transform: uppercase;
+  font-family: -apple-system, sans-serif;
+  margin-bottom: 3px;
+}
+#wt-tip-text { font-size: 15px; line-height: 1.4; }
+
+/* AI Voice button */
+#ai-fab {
+  position: fixed; bottom: 14px; right: 14px; z-index: 9000;
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, rgba(110,75,200,.92), rgba(170,90,200,.92));
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 999px;
+  padding: 10px 16px 10px 12px;
+  font-family: 'Frank Ruhl Libre', serif;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(110,75,200,.45);
+  text-decoration: none;
+  direction: rtl;
+  user-select: none;
+  transition: transform .15s;
+}
+#ai-fab:hover, #ai-fab:active { transform: translateY(-2px); }
+#ai-fab .ai-ic {
+  width: 28px; height: 28px;
+  background: rgba(255,255,255,.18);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+</style>
+
+<div id="wt-tip">
+  <div id="wt-tip-label">לבוש מומלץ</div>
+  <div id="wt-tip-text">—</div>
+</div>
+
+<a id="ai-fab" href="https://claude.ai/new" target="_blank" rel="noopener">
+  <div class="ai-ic">🎤</div>
+  <span>שאלה ל-AI</span>
+</a>
+
+<script>
+(function() {
+  const showTip = () => {
+    if (!window.FAMILY || !window.FAMILY.weather) return;
+    const tip = window.FAMILY.weather.tip;
+    if (!tip) return;
+    const el = document.getElementById('wt-tip-text');
+    if (el) {
+      el.textContent = tip;
+      document.getElementById('wt-tip').classList.add('show');
+    }
+  };
+  const tWait = setInterval(() => {
+    if (window.FAMILY) { clearInterval(tWait); showTip(); }
+  }, 300);
 })();
 </script>
 
