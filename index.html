@@ -3892,29 +3892,27 @@ renderWhenReady();
 
 <!-- Clothing tip chip -->
 <style>
-#wt-tip {
-  position: fixed; top: 14px; left: 14px; z-index: 8500;
-  background: linear-gradient(135deg, rgba(20,25,38,.88), rgba(30,35,55,.88));
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(244,241,234,.12);
-  border-radius: 14px;
-  padding: 10px 16px;
-  font-family: 'Frank Ruhl Libre', serif;
-  color: #f4f1ea;
-  font-size: 15px;
+/* Clothing tip injected INSIDE weather card */
+.weather-tip-row {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(244,241,234,.1);
+  font-size: 14px;
+  color: rgba(244,241,234,.85);
+  line-height: 1.3;
   direction: rtl;
-  box-shadow: 0 6px 20px rgba(0,0,0,.4);
-  max-width: 340px;
-  display: none;
+  text-align: right;
+  font-family: 'Frank Ruhl Libre', serif;
 }
-#wt-tip.show { display: block; }
-#wt-tip-label {
-  font-size: 11px; color: rgba(244,241,234,.5);
-  letter-spacing: .15em; text-transform: uppercase;
+.weather-tip-label {
+  font-size: 10px;
+  color: rgba(244,241,234,.45);
+  letter-spacing: .15em;
+  text-transform: uppercase;
   font-family: -apple-system, sans-serif;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
+  text-align: left;
 }
-#wt-tip-text { font-size: 15px; line-height: 1.4; }
 
 /* AI Voice button */
 #ai-fab {
@@ -3929,7 +3927,6 @@ renderWhenReady();
   font-size: 14px;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(110,75,200,.45);
-  text-decoration: none;
   direction: rtl;
   user-select: none;
   transition: transform .15s;
@@ -3944,31 +3941,475 @@ renderWhenReady();
 }
 </style>
 
-<div id="wt-tip">
-  <div id="wt-tip-label">לבוש מומלץ</div>
-  <div id="wt-tip-text">—</div>
-</div>
+<!-- tip integrated into weather widget -->
 
-<a id="ai-fab" href="https://claude.ai/new" target="_blank" rel="noopener">
+<div id="ai-fab" role="button">
   <div class="ai-ic">🎤</div>
   <span>שאלה ל-AI</span>
-</a>
+</div>
+
+<!-- AI Modal -->
+<div id="ai-modal-bg">
+  <div id="ai-modal">
+    <div class="ai-header">
+      <div class="ai-title">🎙️ שאלה ל-Claude</div>
+      <div style="display:flex; gap:8px">
+        <button class="ai-btn-icon" id="ai-settings-btn" title="הגדרות">⚙</button>
+        <button class="ai-btn-icon" id="ai-close-btn">✕</button>
+      </div>
+    </div>
+
+    <!-- API Key setup screen (first run) -->
+    <div id="ai-setup" style="display:none">
+      <div class="ai-setup-title">הגדרת מפתח API חד-פעמית</div>
+      <div class="ai-setup-text">
+        כדי שה-AI יעבוד, הדבק כאן את מפתח ה-API של Anthropic.<br>
+        הוא יישמר רק באייפד שלך — לא נשלח לשום מקום אחר.
+      </div>
+      <input type="password" id="ai-key-input" placeholder="sk-ant-..." dir="ltr" />
+      <div style="display:flex; gap:8px; margin-top:14px">
+        <button class="ai-btn-primary" id="ai-key-save">שמור</button>
+        <button class="ai-btn-secondary" id="ai-key-cancel">ביטול</button>
+      </div>
+      <div class="ai-setup-hint">
+        להוצאת מפתח: <span style="direction:ltr;display:inline-block">console.anthropic.com/settings/keys</span>
+      </div>
+    </div>
+
+    <!-- Main chat screen -->
+    <div id="ai-chat">
+      <div id="ai-conversation"></div>
+
+      <div class="ai-status" id="ai-status"></div>
+
+      <div class="ai-controls">
+        <button id="ai-mic-btn" class="ai-mic-btn">
+          <span class="mic-icon">🎤</span>
+          <span class="mic-label">דבר</span>
+        </button>
+        <input type="text" id="ai-text-input" placeholder="או הקלד שאלה..." />
+        <button id="ai-send-btn" class="ai-send-btn">שלח</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+#ai-modal-bg {
+  position: fixed; inset: 0; z-index: 9500;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(10px);
+  display: none; align-items: center; justify-content: center;
+  font-family: 'Frank Ruhl Libre', serif;
+  direction: rtl;
+}
+#ai-modal-bg.open { display: flex; }
+#ai-modal {
+  background: linear-gradient(180deg, #1a1430 0%, #0f0a20 100%);
+  border: 1px solid rgba(170,90,200,.3);
+  border-radius: 22px;
+  width: 92%; max-width: 720px; height: 80vh; max-height: 700px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(110,75,200,.3);
+}
+.ai-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(170,90,200,.08);
+}
+.ai-title { color: #f4f1ea; font-size: 20px; font-weight: 500; }
+.ai-btn-icon {
+  background: rgba(255,255,255,.08);
+  border: none; color: #f4f1ea;
+  width: 34px; height: 34px; border-radius: 50%;
+  font-size: 16px; cursor: pointer;
+}
+.ai-btn-icon:hover { background: rgba(255,255,255,.16); }
+
+/* Setup screen */
+#ai-setup { padding: 30px 24px; flex: 1; }
+.ai-setup-title { color: #f4f1ea; font-size: 19px; margin-bottom: 14px; }
+.ai-setup-text { color: rgba(244,241,234,.75); font-size: 15px; line-height: 1.5; margin-bottom: 18px; }
+#ai-key-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px; padding: 14px 16px;
+  color: #f4f1ea; font-size: 15px; font-family: 'Geist Mono', monospace;
+}
+.ai-btn-primary {
+  background: linear-gradient(135deg, rgba(110,75,200,.95), rgba(170,90,200,.95));
+  border: none; border-radius: 10px;
+  padding: 12px 22px; color: white;
+  font-family: inherit; font-size: 15px; cursor: pointer;
+}
+.ai-btn-secondary {
+  background: rgba(244,241,234,.08); border: 1px solid rgba(244,241,234,.12);
+  border-radius: 10px; padding: 12px 22px; color: #f4f1ea;
+  font-family: inherit; font-size: 15px; cursor: pointer;
+}
+.ai-setup-hint {
+  margin-top: 18px; color: rgba(244,241,234,.45); font-size: 13px;
+}
+
+/* Chat screen */
+#ai-chat { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#ai-conversation {
+  flex: 1; overflow-y: auto; padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ai-msg {
+  max-width: 85%;
+  padding: 12px 16px; border-radius: 16px;
+  font-size: 16px; line-height: 1.5;
+  white-space: pre-wrap; word-wrap: break-word;
+}
+.ai-msg.user {
+  background: linear-gradient(135deg, rgba(110,75,200,.85), rgba(170,90,200,.85));
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+.ai-msg.assistant {
+  background: rgba(244,241,234,.06);
+  border: 1px solid rgba(244,241,234,.1);
+  color: #f4f1ea;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+.ai-msg.assistant.thinking { color: rgba(244,241,234,.5); font-style: italic; }
+.ai-msg.error { background: rgba(255,80,80,.15); border-color: rgba(255,80,80,.3); color: #ffaaaa; }
+.ai-status {
+  padding: 4px 22px; min-height: 18px;
+  font-size: 13px; color: rgba(244,241,234,.5);
+  font-family: -apple-system, sans-serif;
+}
+.ai-controls {
+  display: flex; gap: 8px; align-items: center;
+  padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.2);
+}
+.ai-mic-btn {
+  background: linear-gradient(135deg, rgba(110,75,200,.95), rgba(170,90,200,.95));
+  border: none; border-radius: 999px;
+  padding: 10px 18px; color: white;
+  font-family: inherit; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+.ai-mic-btn.recording {
+  background: linear-gradient(135deg, #ff4444, #ff8866);
+  animation: aiPulse 1s ease-in-out infinite;
+}
+@keyframes aiPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+#ai-text-input {
+  flex: 1;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px; padding: 10px 16px;
+  color: #f4f1ea; font-size: 15px; font-family: inherit;
+}
+.ai-send-btn {
+  background: rgba(244,241,234,.08); border: 1px solid rgba(244,241,234,.12);
+  border-radius: 999px; padding: 10px 18px;
+  color: #f4f1ea; font-family: inherit; font-size: 15px;
+  cursor: pointer;
+}
+</style>
 
 <script>
 (function() {
-  const showTip = () => {
-    if (!window.FAMILY || !window.FAMILY.weather) return;
-    const tip = window.FAMILY.weather.tip;
-    if (!tip) return;
-    const el = document.getElementById('wt-tip-text');
-    if (el) {
-      el.textContent = tip;
-      document.getElementById('wt-tip').classList.add('show');
+  const KEY_STORAGE = 'ai_anthropic_key_v1';
+  const CONV_STORAGE = 'ai_conversation_v1';
+  let apiKey = localStorage.getItem(KEY_STORAGE) || '';
+  let conversation = []; // {role, content}[]
+  let recognition = null;
+  let isRecording = false;
+  let isSpeaking = false;
+  let currentUtterance = null;
+
+  // Restore conversation
+  try { conversation = JSON.parse(sessionStorage.getItem(CONV_STORAGE) || '[]'); } catch(e){}
+
+  const $ = id => document.getElementById(id);
+
+  function showScreen() {
+    if (!apiKey) {
+      $('ai-setup').style.display = 'block';
+      $('ai-chat').style.display = 'none';
+    } else {
+      $('ai-setup').style.display = 'none';
+      $('ai-chat').style.display = 'flex';
+      renderConversation();
     }
+  }
+
+  function openModal() {
+    $('ai-modal-bg').classList.add('open');
+    showScreen();
+    if (apiKey) setTimeout(() => $('ai-text-input').focus(), 100);
+  }
+
+  function closeModal() {
+    $('ai-modal-bg').classList.remove('open');
+    if (isRecording) stopRecording();
+    if (isSpeaking) stopSpeaking();
+  }
+
+  function setStatus(text) { $('ai-status').textContent = text || ''; }
+
+  function renderConversation() {
+    const c = $('ai-conversation');
+    c.innerHTML = '';
+    conversation.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'ai-msg ' + m.role + (m.error ? ' error' : '');
+      div.textContent = m.content;
+      c.appendChild(div);
+    });
+    c.scrollTop = c.scrollHeight;
+  }
+
+  function addMessage(role, content, error) {
+    conversation.push({ role, content, error });
+    if (conversation.length > 20) conversation = conversation.slice(-20);
+    try { sessionStorage.setItem(CONV_STORAGE, JSON.stringify(conversation)); } catch(e){}
+    renderConversation();
+  }
+
+  function updateLastMessage(content) {
+    if (conversation.length > 0) {
+      conversation[conversation.length - 1].content = content;
+      try { sessionStorage.setItem(CONV_STORAGE, JSON.stringify(conversation)); } catch(e){}
+      renderConversation();
+    }
+  }
+
+  // ─── Speech Recognition (ASR) ───────────────────
+  function initRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    const r = new SR();
+    r.lang = 'he-IL';
+    r.continuous = false;
+    r.interimResults = true;
+    return r;
+  }
+
+  function startRecording() {
+    if (!recognition) recognition = initRecognition();
+    if (!recognition) {
+      setStatus('זיהוי קולי לא נתמך בדפדפן הזה');
+      return;
+    }
+    isRecording = true;
+    $('ai-mic-btn').classList.add('recording');
+    $('ai-mic-btn').querySelector('.mic-label').textContent = 'מקליט...';
+    setStatus('🎤 מדבר...');
+    let finalText = '';
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const r = event.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      $('ai-text-input').value = finalText + interim;
+      setStatus('🎤 ' + (finalText + interim));
+    };
+    recognition.onerror = (e) => {
+      setStatus('שגיאת הקלטה: ' + e.error);
+      stopRecording();
+    };
+    recognition.onend = () => {
+      stopRecording();
+      const text = $('ai-text-input').value.trim();
+      if (text) sendMessage(text);
+    };
+    try {
+      recognition.start();
+    } catch(e) {
+      setStatus('לא ניתן להתחיל הקלטה');
+      stopRecording();
+    }
+  }
+
+  function stopRecording() {
+    isRecording = false;
+    $('ai-mic-btn').classList.remove('recording');
+    $('ai-mic-btn').querySelector('.mic-label').textContent = 'דבר';
+    if (recognition) {
+      try { recognition.stop(); } catch(e){}
+    }
+  }
+
+  // ─── Speech Synthesis (TTS) ──────────────────────
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    stopSpeaking();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'he-IL';
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    // Try to use a Hebrew voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const heVoice = voices.find(v => v.lang && v.lang.startsWith('he'));
+    if (heVoice) u.voice = heVoice;
+    currentUtterance = u;
+    isSpeaking = true;
+    u.onend = () => { isSpeaking = false; currentUtterance = null; };
+    u.onerror = () => { isSpeaking = false; currentUtterance = null; };
+    window.speechSynthesis.speak(u);
+  }
+
+  function stopSpeaking() {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      isSpeaking = false;
+      currentUtterance = null;
+    }
+  }
+
+  // ─── Send to Anthropic API ───────────────────────
+  async function sendMessage(text) {
+    if (!text || !text.trim()) return;
+    if (!apiKey) {
+      setStatus('הגדר תחילה מפתח API');
+      return;
+    }
+
+    $('ai-text-input').value = '';
+    addMessage('user', text);
+    addMessage('assistant', 'חושב...');
+    setStatus('שולח ל-Claude...');
+
+    try {
+      const apiMessages = conversation
+        .filter((m, i) => !(i === conversation.length - 1 && m.role === 'assistant' && m.content === 'חושב...'))
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 1024,
+          system: 'אתה עוזר משפחתי חכם. אתה עונה בעברית בקצרה ובאופן ברור. אם השאלה מצריכה תשובה ארוכה, תן תקציר קצר ושאל אם המשתמש רוצה הרחבה. הימנע מסימני פיסוק מיוחדים, מקפים ארוכים או רשימות עם תווי בולט - תשובות זורמות יותר מתאימות להקראה בקול.',
+          messages: apiMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        let errMsg = 'שגיאה ' + response.status;
+        try {
+          const j = JSON.parse(errText);
+          if (j.error && j.error.message) errMsg += ': ' + j.error.message;
+        } catch(e) {}
+        updateLastMessage(errMsg);
+        conversation[conversation.length - 1].error = true;
+        renderConversation();
+        setStatus('');
+        return;
+      }
+
+      const data = await response.json();
+      const reply = data.content && data.content[0] && data.content[0].text || '(תשובה ריקה)';
+      updateLastMessage(reply);
+      setStatus('');
+      speak(reply);
+    } catch (e) {
+      updateLastMessage('שגיאת רשת: ' + (e.message || e));
+      conversation[conversation.length - 1].error = true;
+      renderConversation();
+      setStatus('');
+    }
+  }
+
+  // ─── Init ─────────────────────────────────────────
+  function init() {
+    $('ai-fab').addEventListener('click', openModal);
+    $('ai-close-btn').addEventListener('click', closeModal);
+    $('ai-modal-bg').addEventListener('click', (e) => {
+      if (e.target.id === 'ai-modal-bg') closeModal();
+    });
+    $('ai-settings-btn').addEventListener('click', () => {
+      $('ai-setup').style.display = 'block';
+      $('ai-chat').style.display = 'none';
+      $('ai-key-input').value = apiKey;
+    });
+    $('ai-key-save').addEventListener('click', () => {
+      const k = $('ai-key-input').value.trim();
+      if (k.length < 20) {
+        setStatus('מפתח לא תקין');
+        return;
+      }
+      apiKey = k;
+      localStorage.setItem(KEY_STORAGE, k);
+      showScreen();
+    });
+    $('ai-key-cancel').addEventListener('click', () => {
+      if (apiKey) showScreen();
+      else closeModal();
+    });
+    $('ai-mic-btn').addEventListener('click', () => {
+      if (isRecording) stopRecording();
+      else if (isSpeaking) stopSpeaking();
+      else startRecording();
+    });
+    $('ai-send-btn').addEventListener('click', () => {
+      const txt = $('ai-text-input').value.trim();
+      if (txt) sendMessage(txt);
+    });
+    $('ai-text-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const txt = e.target.value.trim();
+        if (txt) sendMessage(txt);
+      }
+    });
+
+    // Preload voices on iOS
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+  }
+
+  init();
+})();
+</script>
+
+<script>
+(function() {
+  const injectTip = () => {
+    if (!window.FAMILY || !window.FAMILY.weather) return false;
+    const tip = window.FAMILY.weather.tip;
+    if (!tip) return true; // no tip to show
+    // Find weather-meta element (after React renders)
+    const meta = document.querySelector('.weather-meta');
+    if (!meta) return false;
+    // Don't add twice
+    if (meta.querySelector('.weather-tip-row')) return true;
+    const tipDiv = document.createElement('div');
+    tipDiv.className = 'weather-tip-row';
+    tipDiv.innerHTML = '<div class="weather-tip-label">לבוש מומלץ</div>' +
+                       '<div>' + tip.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>';
+    meta.appendChild(tipDiv);
+    return true;
   };
+  // Retry until React renders and FAMILY is ready
+  let attempts = 0;
   const tWait = setInterval(() => {
-    if (window.FAMILY) { clearInterval(tWait); showTip(); }
-  }, 300);
+    attempts++;
+    if (injectTip() || attempts > 60) clearInterval(tWait);
+  }, 250);
 })();
 </script>
 
