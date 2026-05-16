@@ -1,4 +1,4 @@
-import asyncio, json, argparse, sys
+import asyncio, json, argparse, sys, re
 from datetime import datetime
 from pathlib import Path
 
@@ -230,7 +230,10 @@ async def get_cdk_rows(page):
 
 # ── PARSERS ────────────────────────────────────────────────────
 def parse_weekly(captured):
-    """GetEvents.data.data.events[] -> title, description, startTime, date, student_F/L_Name"""
+    """GetEvents.data.data.events[] -> title, description, startTime, date, student_F/L_Name
+    Note: Python's weekday() returns Mon=0, but Israeli week starts Sunday.
+    DAYS dict uses Sun=0 convention, so correction: (weekday()+1) % 7
+    """
     weekly = {}
     raw = captured.get("GetEvents", {})
     events = raw.get("data", {}).get("data", {}).get("events", [])
@@ -239,7 +242,8 @@ def parse_weekly(captured):
         date_str = e.get("date", "")[:10]  # YYYY-MM-DD
         try:
             dt = datetime.fromisoformat(date_str)
-            day = DAYS.get(dt.weekday(), date_str)
+            # Fix: Python Mon=0, but DAYS dict uses Sun=0
+            day = DAYS.get((dt.weekday() + 1) % 7, date_str)
         except Exception:
             day = date_str
         period   = str(e.get("startTime", ""))
@@ -254,6 +258,113 @@ def parse_weekly(captured):
             "date": date_str,
         })
     return weekly
+
+
+def parse_full_schedule(captured):
+    """Parse GetPupilScheduale response into weekly dict.
+
+    Known response structure:
+    {
+      "status": true,
+      "data": [
+        { "dayIndex": 1, "hoursData": [
+            { "hour": 1, "scheduale": [
+                { "day": 1, "hour": 1, "subject": "שפה",
+                  "teacherLastName": "רביבו", "teacherPrivateName": "דנה",
+                  "room": null }
+            ]},
+            ...
+        ]},
+        { "dayIndex": 2, "hoursData": [...] },
+        ...
+      ]
+    }
+    dayIndex: 1=Sunday, 2=Monday, ..., 6=Friday, 7=Saturday
+    """
+    raw = None
+    for k, v in captured.items():
+        if ("Scheduale" in k or "Schedule" in k) and isinstance(v, dict):
+            raw = v
+            break
+    if not raw:
+        return {}, "no_response_captured"
+
+    data = raw.get("data", [])
+    if not isinstance(data, list) or not data:
+        return {}, f"data missing or empty (type={type(data).__name__})"
+
+    DAY_MAP = {1:'ראשון', 2:'שני', 3:'שלישי', 4:'רביעי', 5:'חמישי', 6:'שישי', 7:'שבת'}
+
+    weekly = {}
+    total_lessons = 0
+    skipped = 0
+
+    for day_block in data:
+        if not isinstance(day_block, dict):
+            continue
+        day_idx = day_block.get('dayIndex')
+        day_heb = DAY_MAP.get(day_idx)
+        if not day_heb:
+            skipped += 1
+            continue
+        hours_data = day_block.get('hoursData', []) or []
+        for hour_block in hours_data:
+            if not isinstance(hour_block, dict):
+                continue
+            scheduale = hour_block.get('scheduale', []) or []
+            if not scheduale:
+                continue
+            for lesson in scheduale:
+                if not isinstance(lesson, dict):
+                    continue
+                subject = (lesson.get('subject') or '').strip()
+                if not subject:
+                    skipped += 1
+                    continue
+                hour = lesson.get('hour', hour_block.get('hour', ''))
+                teacher_last = (lesson.get('teacherLastName') or '').strip()
+                teacher_first = (lesson.get('teacherPrivateName') or '').strip()
+                # Webtop displays as: lastName + " " + privateName
+                teacher = (teacher_last + ' ' + teacher_first).strip()
+                room = lesson.get('room') or ''
+                weekly.setdefault(day_heb, []).append({
+                    'period': str(hour),
+                    'subject': subject,
+                    'teacher': teacher,
+                    'room': str(room or ''),
+                })
+                total_lessons += 1
+
+    info = f"days={len(weekly)}, lessons={total_lessons}, skipped={skipped}"
+    return weekly, info
+
+
+async def get_full_schedule(page):
+    """Navigate to the schedule page and intercept GetPupilScheduale.
+    Tries multiple candidate URLs since the exact URL is not certain."""
+    candidates = [
+        BASE + "/Student_Card/1",   # likely "מ. שעות ושינויים"
+        BASE + "/Student_Card/2",
+        BASE + "/Student_Card/3",
+        BASE + "/Student_Card/10",  # matches moduleID=10
+        BASE + "/PupilCard",
+        BASE + "/Schedule",
+    ]
+    for url in candidates:
+        try:
+            print(f"    trying {url}")
+            cap = await intercept_nav(page, url,
+                keywords=["GetPupilScheduale", "PupilScheduale", "Scheduale", "Schedule"],
+                extra_wait=4)
+            # Did we capture the schedule API?
+            for k in cap.keys():
+                if "Scheduale" in k or "PupilScheduale" in k:
+                    print(f"    ✓ captured: {k}")
+                    return cap
+        except Exception as e:
+            print(f"    {url} failed: {e}")
+    print(f"    ✗ schedule API not captured on any candidate URL")
+    return {}
 
 def parse_events(captured, cdk_fallback=None):
     """GetPupilDiciplineEvents.data.diciplineEvents[] -> eventType, eventDate, hourNum, subjectName"""
@@ -332,57 +443,123 @@ def parse_messages(captured):
     return msgs
 
 async def fetch_message_bodies(page, messages):
-    """For each message without a body, fetch its details via Webtop API.
-    Webtop pattern: GET .../GetMessage?messageID=... or similar.
-    We try a few common endpoints and capture the response."""
+    """For each message, fetch its full body via Webtop API.
+    Endpoint: POST /server/api/messageBox/GetMessagesInboxData
+    Body: { MessageId, FilterId: 0, IsInbox: true, hasRead: null }"""
     if not messages:
         return messages
-    for msg in messages:
+    debug_dumped = False
+    for idx, msg in enumerate(messages):
         if msg.get("body") and len(msg["body"]) > 20:
-            continue  # already have body
+            continue
         mid = msg.get("id")
         if not mid:
             continue
         try:
             body_data = await page.evaluate("""
                 async (msgId) => {
-                    const tryUrls = [
-                        `/server/api/messages/GetMessageDetails?messageID=${encodeURIComponent(msgId)}`,
-                        `/server/api/messages/GetMessage?messageID=${encodeURIComponent(msgId)}`,
-                        `/server/api/inbox/GetMessage?messageID=${encodeURIComponent(msgId)}`,
-                        `/server/api/messages/GetMessageContent?messageID=${encodeURIComponent(msgId)}`,
-                    ];
-                    for (const path of tryUrls) {
-                        try {
-                            const url = 'https://webtopserver.smartschool.co.il' + path;
-                            const r = await fetch(url, {
-                                method: 'GET',
-                                credentials: 'include',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'language': 'he',
-                                    'X-XSRF-TOKEN': '',
-                                },
-                            });
-                            if (r.ok) {
-                                const j = await r.json();
-                                return j;
-                            }
-                        } catch(e) {}
-                    }
-                    return null;
+                    try {
+                        const r = await fetch('https://webtopserver.smartschool.co.il/server/api/messageBox/GetMessagesInboxData', {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'language': 'he',
+                                'accept': 'application/json, text/plain, */*',
+                            },
+                            body: JSON.stringify({
+                                MessageId: msgId,
+                                FilterId: 0,
+                                IsInbox: true,
+                                hasRead: null,
+                            }),
+                        });
+                        if (!r.ok) return { __error: 'http ' + r.status, __statusText: r.statusText };
+                        const j = await r.json();
+                        return j;
+                    } catch(e) { return { __error: String(e) }; }
                 }
             """, mid)
-            if body_data:
-                # try to extract body from common shapes
-                d = body_data.get("data") if isinstance(body_data, dict) else None
-                if isinstance(d, dict):
-                    body = (d.get("body") or d.get("messageBody") or d.get("content")
-                            or d.get("text") or d.get("messageText") or "")
-                    if body:
-                        msg["body"] = str(body)
-        except Exception:
-            pass
+
+            # DEBUG: dump the first response structure
+            if not debug_dumped and body_data:
+                debug_dumped = True
+                print(f"    [DEBUG] msg #{idx+1} response keys: {list(body_data.keys()) if isinstance(body_data, dict) else type(body_data).__name__}")
+                if isinstance(body_data, dict):
+                    if body_data.get('__error'):
+                        print(f"    [DEBUG] error: {body_data.get('__error')}")
+                    # Show first level of data
+                    d = body_data.get('data')
+                    if isinstance(d, dict):
+                        print(f"    [DEBUG] data keys: {list(d.keys())}")
+                        # Show string values
+                        for k, v in list(d.items())[:30]:
+                            if isinstance(v, str) and len(v) > 0:
+                                preview = v[:100].replace('\n', ' ')
+                                print(f"    [DEBUG]   {k}: {preview!r}")
+                            elif isinstance(v, dict):
+                                print(f"    [DEBUG]   {k}: <dict> keys: {list(v.keys())[:10]}")
+                            elif isinstance(v, list):
+                                print(f"    [DEBUG]   {k}: <list len={len(v)}>")
+                    elif isinstance(d, list):
+                        print(f"    [DEBUG] data is list, len={len(d)}")
+                        if d and isinstance(d[0], dict):
+                            print(f"    [DEBUG] data[0] keys: {list(d[0].keys())}")
+                    elif d is not None:
+                        print(f"    [DEBUG] data type: {type(d).__name__}")
+                    else:
+                        # Maybe response shape is different - dump top-level
+                        for k, v in list(body_data.items())[:20]:
+                            if isinstance(v, str):
+                                print(f"    [DEBUG] {k}: {v[:100]!r}")
+                            elif isinstance(v, dict):
+                                print(f"    [DEBUG] {k}: <dict> keys: {list(v.keys())[:10]}")
+                            elif isinstance(v, list):
+                                print(f"    [DEBUG] {k}: <list len={len(v)}>")
+
+            if not body_data or body_data.get("__error"):
+                continue
+
+            # Try many possible shapes
+            body_text = ""
+            def find_body_in(obj, depth=0):
+                """Recursively look for a body-like field."""
+                if depth > 4 or obj is None:
+                    return ""
+                if isinstance(obj, dict):
+                    # Check common body field names (in priority order)
+                    for key in ['HtmlBody', 'htmlBody', 'messageBody', 'MessageBody',
+                                'body', 'Body', 'content', 'Content',
+                                'messageContent', 'MessageContent', 'messageText', 'MessageText',
+                                'text', 'Text', 'mainText', 'mainBody']:
+                        v = obj.get(key)
+                        if isinstance(v, str) and len(v) > 10:
+                            return v
+                    # Recurse into nested dicts
+                    for v in obj.values():
+                        if isinstance(v, (dict, list)):
+                            found = find_body_in(v, depth+1)
+                            if found:
+                                return found
+                elif isinstance(obj, list) and obj:
+                    return find_body_in(obj[0], depth+1)
+                return ""
+
+            body_text = find_body_in(body_data)
+
+            if body_text:
+                clean = re.sub(r'<br\s*/?>', '\n', str(body_text))
+                clean = re.sub(r'</p>', '\n', clean)
+                clean = re.sub(r'<[^>]+>', '', clean)
+                clean = re.sub(r'&nbsp;', ' ', clean)
+                clean = re.sub(r'&amp;', '&', clean)
+                clean = re.sub(r'&lt;', '<', clean)
+                clean = re.sub(r'&gt;', '>', clean)
+                clean = re.sub(r'&quot;', '"', clean)
+                clean = re.sub(r'\n\s*\n', '\n\n', clean)
+                msg["body"] = clean.strip()[:2000]
+        except Exception as e:
+            print(f"    [DEBUG] msg #{idx+1} exception: {e}")
     return messages
 
 def parse_notifications(captured, cdk_fallback=None):
@@ -430,19 +607,36 @@ async def scrape_student(browser, username, password, name):
     context = await browser.new_context(
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     page = await context.new_page()
-    data = {"name":name,"weekly_plan":{},"lesson_events":[],"homework":[],"messages":[],"notifications":[],
-            "last_updated":datetime.now().isoformat(),"error":None}
+    data = {"name":name,"weekly_plan":{},"weekly_schedule":{},"lesson_events":[],"homework":[],"messages":[],"notifications":[],
+            "last_updated":datetime.now().isoformat(),"error":None,"_schedule_debug":None}
     try:
         if not await login(page, username, password):
             return {**data,"error":"login_failed"}
 
-        # Weekly plan
-        print("  [weekly plan]")
+        # Weekly plan (events with topics - what was/will be taught)
+        print("  [weekly plan / topics]")
         cap = await intercept_nav(page, BASE+"/Weekly_Plan",
             keywords=["WeeklyScedule","WeeklySchedule","GetEvents","GetInitData"], extra_wait=5)
         data["weekly_plan"] = parse_weekly(cap)
         cnt = sum(len(v) for v in data["weekly_plan"].values())
         print(f"  -> {cnt} lessons in {len(data['weekly_plan'])} days")
+
+        # Full weekly schedule (PupilCard - the colorful static grid)
+        print("  [full weekly schedule]")
+        cap = await get_full_schedule(page)
+        data["weekly_schedule"], dbg = parse_full_schedule(cap)
+        full_cnt = sum(len(v) for v in data["weekly_schedule"].values())
+        print(f"  -> {full_cnt} schedule rows | {dbg}")
+        data["_schedule_debug"] = dbg
+        # If parsing failed but we captured something, save raw sample for debugging
+        if not full_cnt and cap:
+            for k, v in cap.items():
+                if "Scheduale" in k or "Schedule" in k:
+                    try:
+                        data["_schedule_raw_sample"] = json.dumps(v, ensure_ascii=False)[:8000]
+                    except Exception:
+                        pass
+                    break
 
         # Lesson events
         print("  [lesson events]")
@@ -532,7 +726,9 @@ async def main():
         json.dump(result, f, ensure_ascii=False, indent=2)
     print(f"\nSaved: {OUTPUT_FILE}")
     for s in result["students"]:
-        print(f"  {s['name']}: {len(s['weekly_plan'])} days | "
+        sched_rows = sum(len(v) for v in s.get('weekly_schedule', {}).values())
+        print(f"  {s['name']}: {len(s['weekly_plan'])} plan days | "
+              f"{sched_rows} schedule rows | "
               f"{len(s['lesson_events'])} events | "
               f"{len(s['homework'])} hw | {len(s['messages'])} msgs | "
               f"{len(s.get('notifications', []))} notifs")
