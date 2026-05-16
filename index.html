@@ -1589,12 +1589,12 @@ async function loadFamilyData() {
     const hc = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${Y}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`).then(r=>r.json());
     data.date = {
       dayHeb: 'יום ' + DAY_HEB[DOW],
-      hebDate: (hc.hd || '') + ' ב' + (hc.hm || '') + ' ' + (hc.hy || ''),
-      greg: `${DOW_EN[DOW]} · ${today.getDate()} ${MON_HEB[today.getMonth()].toUpperCase()} ${Y}`,
+      hebDate: hc.hebrew || '',
+      greg: `${D}/${M}/${Y}`,
     };
 
     // Shabbat times (Shoham area, lat 31.9971 lon 34.9394, geoname Shoham)
-    const sh = await fetch(`https://www.hebcal.com/shabbat?cfg=json&geonameid=295721&m=50`).then(r=>r.json()); // geoname Rishon/central
+    const sh = await fetch(`https://www.hebcal.com/shabbat?cfg=json&latitude=31.9956&longitude=34.9544&tzid=Asia/Jerusalem&m=40&b=20&i=on&M=on`).then(r=>r.json()); // Shoham, Israel
     let candleLight = '---', havdalah = '--:--', parasha = '', daysAway = 0;
     if (sh.items) {
       for (const item of sh.items) {
@@ -1616,7 +1616,7 @@ async function loadFamilyData() {
     data.date = {
       dayHeb: 'יום ' + DAY_HEB[DOW],
       hebDate: '',
-      greg: `${DOW_EN[DOW]} · ${today.getDate()} ${MON_HEB[today.getMonth()].toUpperCase()} ${Y}`,
+      greg: `${D}/${M}/${Y}`,
     };
     data.shabbat = { candleLighting: '--:--', havdalah: '--:--', parasha: '', daysAway: 0, todayIs: 'other' };
   }
@@ -1624,7 +1624,7 @@ async function loadFamilyData() {
   // ── 2. Weather (Open-Meteo, Shoham) ─────────────────────────
   try {
     const w = await fetch(
-      'https://api.open-meteo.com/v1/forecast?latitude=31.9971&longitude=34.9394' +
+      'https://api.open-meteo.com/v1/forecast?latitude=31.9956&longitude=34.9544' +
       '&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code' +
       '&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset' +
       '&timezone=Asia%2FJerusalem&forecast_days=3'
@@ -3456,144 +3456,363 @@ renderWhenReady();
 
 
 <style>
-/* Webtop notifications/messages floating panel */
-#wb-panel {
-  position: fixed; top: 12px; left: 12px; z-index: 999;
-  display: flex; gap: 10px; flex-direction: column;
+/* ─── Webtop Hub: corner button + modal ─────────────────────── */
+#wb-fab {
+  position: fixed; bottom: 14px; left: 14px; z-index: 9000;
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, rgba(20,25,38,.92), rgba(30,35,55,.92));
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(244,241,234,.14);
+  border-radius: 999px;
+  padding: 8px 14px 8px 10px;
+  font-family: 'Frank Ruhl Libre', serif;
+  color: #f4f1ea;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  transition: transform .15s, box-shadow .15s;
+  direction: rtl;
+  user-select: none;
+}
+#wb-fab:hover, #wb-fab:active {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.6);
+}
+#wb-fab .wb-icon {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,138,107,.18);
+  border-radius: 50%;
+  font-size: 14px;
+}
+#wb-fab .wb-fab-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  background: #ff5b4a;
+  color: white;
+  font-size: 11px; font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 6px; min-width: 18px;
+  text-align: center;
+  font-family: -apple-system, sans-serif;
+  box-shadow: 0 2px 6px rgba(255,91,74,.4);
+}
+#wb-fab .wb-fab-badge.zero { display: none; }
+
+/* Modal */
+#wb-modal-bg {
+  position: fixed; inset: 0; z-index: 9500;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center; justify-content: center;
   font-family: 'Frank Ruhl Libre', serif;
   direction: rtl;
 }
-.wb-kid {
-  background: rgba(20,25,38,.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(244,241,234,.1);
-  border-radius: 14px;
-  padding: 10px 14px;
-  display: flex; gap: 12px; align-items: center;
-  min-width: 180px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.4);
-}
-.wb-kid-name {
-  font-size: 16px; font-weight: 500; color: #f4f1ea;
-  margin-left: 4px;
-}
-.wb-kid-name.ron { color: #5aa9ff; }
-.wb-kid-name.yuval { color: #ff8a6b; }
-.wb-actions { display: flex; gap: 8px; }
-.wb-btn {
-  background: rgba(244,241,234,.08);
+#wb-modal-bg.open { display: flex; }
+#wb-modal {
+  background: linear-gradient(180deg, #161b2c 0%, #0f1320 100%);
   border: 1px solid rgba(244,241,234,.12);
+  border-radius: 20px;
+  width: 90%; max-width: 720px; max-height: 85vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,.7);
+}
+.wb-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(244,241,234,.08);
+}
+.wb-title { color: #f4f1ea; font-size: 20px; font-weight: 500; }
+.wb-close {
+  background: rgba(244,241,234,.08);
+  border: none; color: #f4f1ea;
+  width: 32px; height: 32px; border-radius: 50%;
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.wb-close:hover { background: rgba(244,241,234,.16); }
+.wb-tabs {
+  display: flex; gap: 4px;
+  padding: 12px 16px 0;
+  flex-wrap: wrap;
+}
+.wb-tab {
+  background: rgba(244,241,234,.06);
+  border: 1px solid transparent;
   border-radius: 10px;
-  padding: 6px 10px;
-  color: #f4f1ea;
-  font-size: 13px;
+  padding: 8px 14px;
+  color: rgba(244,241,234,.7);
+  font-size: 14px;
   font-family: inherit;
   cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 8px;
   transition: all .15s;
+}
+.wb-tab.active { background: rgba(244,241,234,.14); color: #f4f1ea; border-color: rgba(244,241,234,.16); }
+.wb-tab .badge {
+  background: rgba(255,91,74,.85);
+  color: white;
+  font-size: 11px; font-weight: 600;
+  border-radius: 999px;
+  padding: 1px 6px; min-width: 18px;
+  text-align: center;
+  font-family: -apple-system, sans-serif;
+}
+.wb-tab .badge.zero { background: rgba(244,241,234,.16); color: rgba(244,241,234,.5); }
+.wb-tab.ron .dot, .wb-tab.yuval .dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+}
+.wb-tab.ron .dot { background: #5aa9ff; box-shadow: 0 0 8px #5aa9ff; }
+.wb-tab.yuval .dot { background: #ff8a6b; box-shadow: 0 0 8px #ff8a6b; }
+.wb-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px 16px;
+}
+.wb-item {
+  background: rgba(244,241,234,.04);
+  border: 1px solid rgba(244,241,234,.06);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.wb-item:hover { background: rgba(244,241,234,.08); }
+.wb-item.new {
+  border-color: rgba(255,138,107,.35);
+  background: rgba(255,138,107,.06);
+}
+.wb-item.new::before {
+  content: ''; display: inline-block;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff5b4a; box-shadow: 0 0 8px rgba(255,91,74,.6);
+  margin-left: 8px; vertical-align: middle;
+}
+.wb-item-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.wb-item-title { color: #f4f1ea; font-size: 15px; font-weight: 500; flex: 1; }
+.wb-item-date { color: rgba(244,241,234,.5); font-size: 12px; font-family: -apple-system, sans-serif; white-space: nowrap; }
+.wb-item-meta { color: rgba(244,241,234,.6); font-size: 13px; margin-top: 4px; }
+.wb-item-body {
+  color: rgba(244,241,234,.75);
+  font-size: 14px; margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(244,241,234,.06);
+  display: none;
+  line-height: 1.5;
+}
+.wb-item.expanded .wb-item-body { display: block; }
+.wb-empty {
+  text-align: center; padding: 40px 20px;
+  color: rgba(244,241,234,.45);
+  font-size: 15px;
+}
+.wb-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(244,241,234,.08);
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+.wb-footer-btn {
+  background: rgba(244,241,234,.08);
+  border: 1px solid rgba(244,241,234,.12);
+  color: #f4f1ea;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-family: inherit; font-size: 13px;
+  cursor: pointer;
   text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
 }
-.wb-btn:hover, .wb-btn:active {
-  background: rgba(244,241,234,.16);
-  transform: translateY(-1px);
-}
-.wb-btn .icon { font-size: 14px; }
-.wb-btn .count {
-  background: rgba(255,138,107,.9);
-  color: #0a0d14;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 1px 6px;
-  font-size: 11px;
-  min-width: 14px; text-align: center;
-}
-.wb-btn .count.zero { display: none; }
-.wb-btn.has-unread { border-color: rgba(255,138,107,.5); box-shadow: 0 0 0 1px rgba(255,138,107,.3); }
+.wb-footer-btn:hover { background: rgba(244,241,234,.16); }
 </style>
 
-<div id="wb-panel"></div>
+<div id="wb-fab">
+  <div style="position:relative">
+    <div class="wb-icon">📚</div>
+    <span class="wb-fab-badge zero" id="wb-fab-badge">0</span>
+  </div>
+  <span>בית ספר</span>
+</div>
+
+<div id="wb-modal-bg">
+  <div id="wb-modal">
+    <div class="wb-header">
+      <div class="wb-title">📚 הודעות והתראות מבית הספר</div>
+      <button class="wb-close" id="wb-close-btn">✕</button>
+    </div>
+    <div class="wb-tabs" id="wb-tabs"></div>
+    <div class="wb-list" id="wb-list"></div>
+    <div class="wb-footer">
+      <a class="wb-footer-btn" id="wb-open-webtop" href="https://webtop.smartschool.co.il" target="_blank" rel="noopener">פתח Webtop ↗</a>
+    </div>
+  </div>
+</div>
 
 <script>
-// Build the Webtop quick-access panel once FAMILY data is loaded
-function buildWebtopPanel() {
-  const F = window.FAMILY;
-  if (!F) return;
-  const panel = document.getElementById('wb-panel');
-  if (!panel) return;
-
+(function() {
   const WEBTOP_BASE = 'https://webtop.smartschool.co.il';
-  const MSG_URL = WEBTOP_BASE + '/Messages';
-  const NOTIF_URL = WEBTOP_BASE + '/notification';
+  const SEEN_KEY = 'wb_seen_v2';
 
-  // Persisted "read" state in localStorage
-  const KEY = 'wb_read_v1';
-  let read = {};
-  try { read = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){}
+  let seen = {};
+  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); } catch(e){}
+  const saveSeen = () => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch(e){} };
 
-  function unreadCount(items, idPrefix) {
-    if (!items) return 0;
-    return items.filter(it => it.unread && !read[idPrefix + ':' + (it.id || it.subject || it.title)]).length;
+  // Stable ID for an item (uses .id or hash of fields)
+  const itemKey = (kid, kind, item) => {
+    const fallback = (item.sender||'') + '|' + (item.subject||item.title||'') + '|' + (item.date||'');
+    return kid + '_' + kind + '_' + (item.id || fallback);
+  };
+
+  const isNew = (kid, kind, item) => !seen[itemKey(kid, kind, item)];
+
+  const markSeen = (kid, kind, item) => {
+    seen[itemKey(kid, kind, item)] = Date.now();
+    saveSeen();
+  };
+
+  const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  let currentTab = 'ron_msg'; // default tab
+
+  function countAllNew() {
+    const F = window.FAMILY;
+    if (!F) return 0;
+    let n = 0;
+    for (const kid of [F.ron, F.yuval]) {
+      const kidId = kid.name;
+      for (const m of (kid.messages || [])) if (isNew(kidId, 'msg', m)) n++;
+      for (const n2 of (kid.notifications || [])) if (isNew(kidId, 'notif', n2)) n++;
+    }
+    return n;
   }
 
-  function markAllRead(items, idPrefix) {
-    if (!items) return;
-    items.forEach(it => {
-      read[idPrefix + ':' + (it.id || it.subject || it.title)] = 1;
-    });
-    try { localStorage.setItem(KEY, JSON.stringify(read)); } catch(e){}
+  function refreshFab() {
+    const badge = document.getElementById('wb-fab-badge');
+    if (!badge) return;
+    const n = countAllNew();
+    badge.textContent = n;
+    badge.classList.toggle('zero', n === 0);
   }
 
-  function kidPill(kid, cssClass) {
-    const msgs = kid.messages || [];
-    const notifs = kid.notifications || [];
-    const msgUnread = unreadCount(msgs, kid.name + '_msg');
-    const notifUnread = unreadCount(notifs, kid.name + '_notif');
+  function renderTabs() {
+    const F = window.FAMILY;
+    const tabs = document.getElementById('wb-tabs');
+    if (!F || !tabs) return;
 
-    const totalMsg = msgs.length;
-    const totalNotif = notifs.length;
+    const counts = {
+      ron_msg: { items: F.ron.messages || [], new: 0, label: 'הודעות', color: 'ron', name: 'רון' },
+      ron_notif: { items: F.ron.notifications || [], new: 0, label: 'התראות', color: 'ron', name: 'רון' },
+      yuval_msg: { items: F.yuval.messages || [], new: 0, label: 'הודעות', color: 'yuval', name: 'יובל' },
+      yuval_notif: { items: F.yuval.notifications || [], new: 0, label: 'התראות', color: 'yuval', name: 'יובל' },
+    };
+    counts.ron_msg.new = (F.ron.messages || []).filter(m => isNew('רון','msg',m)).length;
+    counts.ron_notif.new = (F.ron.notifications || []).filter(n => isNew('רון','notif',n)).length;
+    counts.yuval_msg.new = (F.yuval.messages || []).filter(m => isNew('יובל','msg',m)).length;
+    counts.yuval_notif.new = (F.yuval.notifications || []).filter(n => isNew('יובל','notif',n)).length;
 
-    const div = document.createElement('div');
-    div.className = 'wb-kid';
-    div.innerHTML = `
-      <div class="wb-kid-name ${cssClass}">${kid.name}</div>
-      <div class="wb-actions">
-        <a class="wb-btn ${msgUnread > 0 ? 'has-unread' : ''}" href="${MSG_URL}" target="_blank" rel="noopener" data-mark="${cssClass}_msg">
-          <span class="icon">✉</span>
-          <span>הודעות</span>
-          <span class="count ${msgUnread === 0 ? 'zero' : ''}">${msgUnread || totalMsg}</span>
-        </a>
-        <a class="wb-btn ${notifUnread > 0 ? 'has-unread' : ''}" href="${NOTIF_URL}" target="_blank" rel="noopener" data-mark="${cssClass}_notif">
-          <span class="icon">🔔</span>
-          <span>התראות</span>
-          <span class="count ${notifUnread === 0 ? 'zero' : ''}">${notifUnread || totalNotif}</span>
-        </a>
-      </div>
-    `;
-    // Add click handler to mark as read locally (won't survive scraper, but feels responsive)
-    div.querySelectorAll('a[data-mark]').forEach(a => {
-      a.addEventListener('click', () => {
-        const mark = a.getAttribute('data-mark');
-        if (mark.includes('msg')) markAllRead(msgs, kid.name + '_msg');
-        if (mark.includes('notif')) markAllRead(notifs, kid.name + '_notif');
-        // refresh panel after short delay
-        setTimeout(buildWebtopPanel, 300);
+    tabs.innerHTML = '';
+    for (const [key, info] of Object.entries(counts)) {
+      const btn = document.createElement('button');
+      btn.className = `wb-tab ${info.color} ${currentTab === key ? 'active' : ''}`;
+      const icon = info.label === 'הודעות' ? '✉' : '🔔';
+      btn.innerHTML = `
+        <span class="dot"></span>
+        <span>${info.name} · ${icon} ${info.label}</span>
+        <span class="badge ${info.new === 0 ? 'zero' : ''}">${info.new || info.items.length}</span>
+      `;
+      btn.addEventListener('click', () => { currentTab = key; renderTabs(); renderList(); });
+      tabs.appendChild(btn);
+    }
+  }
+
+  function renderList() {
+    const F = window.FAMILY;
+    const list = document.getElementById('wb-list');
+    if (!F || !list) return;
+
+    const [kidKey, kind] = currentTab.split('_');
+    const kid = kidKey === 'ron' ? F.ron : F.yuval;
+    const kidName = kid.name;
+    const items = kind === 'msg' ? (kid.messages || []) : (kid.notifications || []);
+
+    list.innerHTML = '';
+    if (items.length === 0) {
+      list.innerHTML = '<div class="wb-empty">אין פריטים להצגה</div>';
+      return;
+    }
+
+    items.forEach((item, idx) => {
+      const div = document.createElement('div');
+      const isItemNew = isNew(kidName, kind, item);
+      div.className = 'wb-item' + (isItemNew ? ' new' : '');
+
+      const title = kind === 'msg' ? (item.subject || '(ללא נושא)') : (item.title || '(התראה)');
+      const meta = kind === 'msg' ? (item.sender || '') : (item.type || '');
+      const body = kind === 'notif' ? (item.body || '') : '';
+      const date = item.date || '';
+
+      // Format date as DD/MM
+      let dateStr = '';
+      if (date && date.length >= 10) {
+        dateStr = `${date.slice(8,10)}/${date.slice(5,7)}`;
+      }
+
+      div.innerHTML = `
+        <div class="wb-item-head">
+          <div class="wb-item-title">${escapeHtml(title)}</div>
+          <div class="wb-item-date">${dateStr}</div>
+        </div>
+        ${meta ? `<div class="wb-item-meta">${escapeHtml(meta)}</div>` : ''}
+        ${body ? `<div class="wb-item-body">${escapeHtml(body)}</div>` : ''}
+      `;
+
+      div.addEventListener('click', () => {
+        // toggle expand if there's body content
+        if (body) div.classList.toggle('expanded');
+        // mark as seen
+        if (isItemNew) {
+          markSeen(kidName, kind, item);
+          div.classList.remove('new');
+          refreshFab();
+          renderTabs();
+        }
       });
+
+      list.appendChild(div);
     });
-    return div;
   }
 
-  panel.innerHTML = '';
-  panel.appendChild(kidPill(F.ron, 'ron'));
-  panel.appendChild(kidPill(F.yuval, 'yuval'));
-}
-
-// Watch for FAMILY to be ready
-const wbPanelInterval = setInterval(() => {
-  if (window.FAMILY) {
-    clearInterval(wbPanelInterval);
-    buildWebtopPanel();
+  function openModal() {
+    document.getElementById('wb-modal-bg').classList.add('open');
+    renderTabs();
+    renderList();
   }
-}, 200);
+  function closeModal() {
+    document.getElementById('wb-modal-bg').classList.remove('open');
+  }
+
+  function init() {
+    document.getElementById('wb-fab').addEventListener('click', openModal);
+    document.getElementById('wb-close-btn').addEventListener('click', closeModal);
+    document.getElementById('wb-modal-bg').addEventListener('click', (e) => {
+      if (e.target.id === 'wb-modal-bg') closeModal();
+    });
+    refreshFab();
+  }
+
+  const waitForData = setInterval(() => {
+    if (window.FAMILY) {
+      clearInterval(waitForData);
+      init();
+    }
+  }, 200);
+})();
 </script>
 
 </body>
