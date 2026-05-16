@@ -10,6 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500&family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 
+/* Family Kitchen Dashboard — iPad 1180×820 */
+
 :root {
   --bg-0: #0a0d14;
   --bg-1: #0f1320;
@@ -119,8 +121,1423 @@ body { font-family: 'Heebo', system-ui, sans-serif; }
 .card-head .card-title { margin-bottom: 0; }
 
 
-/* Override font-face to use Google Fonts */
-body, .app {
+/* Screen-specific styles */
+
+/* TAB DOCK */
+.dock {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 16px 16px;
+  position: relative; z-index: 10;
+}
+.dock-inner {
+  display: flex; gap: 4px; padding: 5px;
+  background: rgba(20,24,38,.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: .5px solid var(--line-2);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px -12px rgba(0,0,0,.6);
+}
+.dock-tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border-radius: 13px;
+  font-size: 13.5px; font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer; transition: all .25s;
+  user-select: none;
+  position: relative;
+}
+.dock-tab:hover { color: var(--ink-1); }
+.dock-tab.active {
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  color: var(--ink-0);
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset;
+}
+.dock-tab .tab-icon {
+  font-size: 16px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px;
+}
+.dock-tab .tab-badge {
+  background: var(--yuval); color: #fff;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; padding: 1px 5px; border-radius: 999px;
+  font-weight: 600;
+}
+
+/* HOME */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.8fr 1fr;
+  grid-template-rows: auto minmax(0,1fr) auto auto;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+.home-grid .card { padding: 14px; }
+.home-grid .kid-mini {
+  gap: 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.18) transparent;
+  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 22px), transparent);
+          mask: linear-gradient(180deg, #000 calc(100% - 22px), transparent);
+  scroll-snap-type: y proximity;
+  position: relative;
+}
+.home-grid .kid-mini::-webkit-scrollbar { width: 4px; }
+.home-grid .kid-mini::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 4px; }
+.home-grid .kid-mini::-webkit-scrollbar-track { background: transparent; }
+.home-grid .kid-mini > * { scroll-snap-align: start; flex-shrink: 0; }
+.home-grid .kid-mini::after {
+  content: '↓ עוד למטה';
+  position: sticky; bottom: 0;
+  display: block; text-align: center;
+  margin: -6px -14px -14px;
+  padding: 6px 0 8px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,.04));
+  pointer-events: none;
+  align-self: stretch;
+}
+.home-grid .today-card {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.18) transparent;
+}
+.home-grid .today-card::-webkit-scrollbar { width: 4px; }
+.home-grid .today-card::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 4px; }
+[data-theme="light"] .home-grid .kid-mini::-webkit-scrollbar-thumb,
+[data-theme="light"] .home-grid .today-card::-webkit-scrollbar-thumb { background: rgba(26,24,20,.2); }
+[data-orientation="portrait"] .home-grid {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto auto auto;
+  gap: 10px;
+}
+[data-orientation="portrait"] .home-grid .hero-card { grid-column: 1 / -1; }
+[data-orientation="portrait"] .home-grid .today-card { grid-column: 1 / -1; }
+[data-orientation="portrait"] .home-grid .pinned-strip,
+[data-orientation="portrait"] .home-grid .widget-strip { grid-column: 1 / -1; }
+[data-orientation="portrait"] .widget-strip { grid-template-columns: 1fr 1fr; flex-wrap: wrap; }
+[data-orientation="portrait"] .widget.history { grid-column: 1 / -1; }
+.pinned-strip {
+  grid-column: 1 / -1;
+  display: flex; align-items: stretch; gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, rgba(255,213,96,.06), rgba(255,213,96,.02));
+  border: .5px solid rgba(255,213,96,.18);
+  border-radius: 14px;
+}
+.pinned-label {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px 0 4px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; letter-spacing: .16em; color: #ffd560;
+  text-transform: uppercase;
+  border-left: .5px solid rgba(255,213,96,.2);
+}
+.pin-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px 6px 10px;
+  background: rgba(255,255,255,.025);
+  border: .5px solid var(--line);
+  border-radius: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.pin-chip .pc-icon {
+  font-size: 22px; opacity: .9; flex-shrink: 0;
+}
+.pin-chip .pc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pin-chip .pc-top {
+  display: flex; align-items: baseline; gap: 6px;
+}
+.pin-chip .pc-days {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px; line-height: 1; color: var(--ink-0);
+  font-variant-numeric: tabular-nums; direction: ltr;
+}
+.pin-chip .pc-days-lbl {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 12px; color: var(--ink-2);
+}
+.pin-chip .pc-date {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .1em; color: var(--ink-3);
+  margin-right: auto;
+}
+.pin-chip .pc-name {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 14px; color: var(--ink-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.hero-card {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 28px;
+  align-items: center;
+  padding: 22px 28px;
+}
+
+.clock-big {
+  font-family: 'Instrument Serif', serif;
+  font-size: 132px; line-height: .85;
+  letter-spacing: -.04em;
+  color: var(--ink-0);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  display: flex; align-items: baseline; gap: 2px;
+}
+.clock-big .colon {
+  font-style: italic; color: var(--ink-2);
+  animation: blink 1.2s steps(2,end) infinite;
+}
+@keyframes blink { 50% { opacity: .3; } }
+
+.date-block { display: flex; flex-direction: column; gap: 4px; }
+.date-block .day-heb {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 36px; font-weight: 500; line-height: 1;
+}
+.date-block .heb-d {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 22px; color: var(--ink-1); line-height: 1.1;
+}
+.date-block .greg {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase; margin-top: 4px;
+}
+
+.weather-block {
+  display: flex; align-items: center; gap: 18px;
+  padding-right: 20px;
+  border-right: .5px solid var(--line);
+}
+.weather-temp {
+  font-family: 'Instrument Serif', serif;
+  font-size: 76px; line-height: 1;
+  color: var(--ink-0);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  display: flex; align-items: baseline;
+}
+.weather-temp .deg { font-size: 32px; color: var(--ink-2); }
+.weather-meta {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 13px; color: var(--ink-1);
+}
+.weather-meta .row { display: flex; align-items: center; gap: 10px; direction: ltr; }
+.weather-meta .lbl {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; letter-spacing: .14em; color: var(--ink-3);
+  width: 48px;
+}
+
+/* TODAY card */
+.today-card { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+
+.briefing {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(var(--orb-a),.10), rgba(var(--orb-b),.05));
+  border: .5px solid var(--line-2);
+  position: relative; overflow: hidden;
+}
+.briefing .ai-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; letter-spacing: .14em; color: var(--ink-2);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.briefing .ai-tag .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 8px var(--good);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .5; transform: scale(.85); }
+}
+.briefing-text {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 18px; line-height: 1.5;
+  color: var(--ink-0);
+}
+.briefing-text .ron { color: var(--ron); font-weight: 500; }
+.briefing-text .yuval { color: var(--yuval); font-weight: 500; }
+.briefing-text .time {
+  font-family: 'Geist Mono', monospace;
+  font-size: 15px; padding: 1px 6px;
+  background: rgba(255,255,255,.06); border-radius: 5px;
+  direction: ltr; display: inline-block;
+}
+
+.timeline {
+  display: flex; flex-direction: column; gap: 4px;
+  flex: 1; min-height: 0; overflow: hidden;
+}
+.tl-row {
+  display: grid;
+  grid-template-columns: 50px 22px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  font-size: 13.5px;
+  border-bottom: .5px solid var(--line);
+}
+.tl-row:last-child { border-bottom: none; }
+.tl-row.now {
+  background: linear-gradient(90deg, rgba(255,255,255,.05), transparent);
+  border-radius: 8px;
+  border-bottom: none;
+}
+.tl-row.past { opacity: .4; }
+.tl-time {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; color: var(--ink-2);
+  direction: ltr; text-align: right;
+}
+.tl-row.now .tl-time { color: var(--ink-0); }
+.tl-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ink-3); justify-self: center;
+}
+.tl-row.ron .tl-dot { background: var(--ron); }
+.tl-row.yuval .tl-dot { background: var(--yuval); }
+.tl-row.family .tl-dot { background: var(--ink-1); }
+.tl-row.now .tl-dot { box-shadow: 0 0 10px currentColor; animation: pulse 2s infinite; }
+.tl-text { color: var(--ink-1); }
+.tl-row.now .tl-text { color: var(--ink-0); font-weight: 500; }
+.tl-who {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+
+/* Kids quick cards, week calendar, recipes, notes, photos */
+
+/* Kid summary on home */
+.kid-mini {
+  display: flex; flex-direction: column; gap: 12px;
+  height: 100%;
+}
+.kid-mini-head {
+  display: flex; align-items: center; gap: 12px;
+}
+.kid-av {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 22px;
+}
+.kid-av.ron { background: var(--ron-soft); color: var(--ron); border: .5px solid rgba(90,169,255,.4); }
+.kid-av.yuval { background: var(--yuval-soft); color: var(--yuval); border: .5px solid rgba(255,138,107,.4); }
+.kid-mini-name {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 22px; line-height: 1; color: var(--ink-0);
+}
+.kid-mini-grade {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .12em; color: var(--ink-3);
+  text-transform: uppercase; margin-top: 4px;
+}
+
+.now-pill {
+  padding: 12px 14px; border-radius: 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.now-pill.ron { background: var(--ron-soft); border: .5px solid rgba(90,169,255,.3); }
+.now-pill.yuval { background: var(--yuval-soft); border: .5px solid rgba(255,138,107,.3); }
+.now-pill .now-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .14em; color: var(--ink-2);
+  text-transform: uppercase;
+}
+.now-pill .now-text { font-size: 16px; font-weight: 500; color: var(--ink-0); }
+.now-pill .now-room {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; color: var(--ink-2);
+  direction: ltr;
+}
+
+.next-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.next-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.02);
+}
+.next-row .t {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; color: var(--ink-2); direction: ltr;
+  width: 40px;
+}
+.next-row .n { color: var(--ink-1); flex: 1; }
+.next-row .r {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; color: var(--ink-3);
+}
+
+.hw-mini { display: flex; flex-direction: column; gap: 5px; }
+.hw-mini .item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; padding: 4px 0;
+}
+.hw-mini .check {
+  width: 16px; height: 16px; border-radius: 5px;
+  border: 1.5px solid var(--ink-3);
+  flex-shrink: 0; position: relative;
+}
+.hw-mini .check.done { background: var(--good); border-color: var(--good); }
+.hw-mini .check.done::after {
+  content: "✓"; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #062014; font-size: 11px; font-weight: 700;
+}
+.hw-mini .item.done .text { text-decoration: line-through; color: var(--ink-3); }
+.hw-mini .text { flex: 1; color: var(--ink-1); }
+.hw-mini .subj {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .1em; color: var(--ink-3);
+  padding: 1px 5px; background: rgba(255,255,255,.04); border-radius: 4px;
+}
+
+.test-pill {
+  padding: 10px 12px; border-radius: 12px;
+  background: rgba(255,255,255,.025);
+  border: .5px solid var(--line);
+  display: flex; align-items: center; gap: 12px;
+}
+.test-pill.urgent {
+  background: rgba(255,180,92,.08);
+  border-color: rgba(255,180,92,.3);
+}
+.test-days {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 38px;
+}
+.test-days .n {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px; line-height: 1;
+  color: var(--ink-0);
+  font-variant-numeric: tabular-nums;
+}
+.test-pill.urgent .test-days .n { color: var(--warn); }
+.test-days .l {
+  font-family: 'Geist Mono', monospace;
+  font-size: 8px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase;
+}
+.test-info { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.test-info .s { font-size: 13px; color: var(--ink-0); font-weight: 500; }
+.test-info .t { font-size: 11px; color: var(--ink-2); }
+
+/* Week strip */
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.week-day {
+  padding: 10px 8px;
+  background: rgba(255,255,255,.02);
+  border: .5px solid var(--line);
+  border-radius: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 110px;
+}
+.week-day.today {
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border-color: var(--line-2);
+}
+.week-day.weekend { opacity: .9; }
+.week-day-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: .5px solid var(--line);
+}
+.week-day-name {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 14px; color: var(--ink-1); line-height: 1;
+}
+.week-day.today .week-day-name { color: var(--ink-0); }
+.week-day-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px; color: var(--ink-1); line-height: 1;
+  direction: ltr;
+}
+.week-day.today .week-day-num { color: var(--ink-0); }
+.week-evt {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10.5px;
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: rgba(255,255,255,.025);
+  white-space: nowrap; overflow: hidden;
+}
+.week-evt .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.week-evt.ron .dot { background: var(--ron); }
+.week-evt.yuval .dot { background: var(--yuval); }
+.week-evt.family .dot { background: var(--ink-1); }
+.week-evt.holiday {
+  background: rgba(255,180,92,.1);
+  color: var(--warn);
+}
+.week-evt.holiday .dot { background: var(--warn); }
+.week-evt .txt {
+  color: var(--ink-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Recipes */
+.recipes-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 18px;
+  height: 100%;
+}
+.recipe-cats {
+  display: flex; flex-direction: column;
+  gap: 6px;
+}
+.recipe-cat {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.02);
+  border: .5px solid var(--line);
+  cursor: pointer; transition: all .2s;
+  font-size: 14px; color: var(--ink-1);
+}
+.recipe-cat:hover { background: rgba(255,255,255,.04); color: var(--ink-0); }
+.recipe-cat.active {
+  background: linear-gradient(135deg, rgba(255,138,107,.12), rgba(255,138,107,.04));
+  border-color: rgba(255,138,107,.35);
+  color: var(--ink-0);
+}
+.recipe-cat .ic { font-size: 18px; }
+.recipe-cat .ct {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; color: var(--ink-3);
+  margin-right: auto;
+}
+
+.recipe-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-content: start;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+.recipe-card {
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+  border: .5px solid var(--line-2);
+  border-radius: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+.recipe-card:hover { transform: translateY(-2px); border-color: var(--ink-3); }
+.recipe-card .rec-emoji {
+  font-size: 36px; line-height: 1;
+}
+.recipe-card .rec-name {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 20px; color: var(--ink-0); line-height: 1.2;
+  font-weight: 500;
+}
+.recipe-card .rec-meta {
+  display: flex; gap: 14px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: .08em; color: var(--ink-2);
+  text-transform: uppercase;
+}
+.recipe-card .rec-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.recipe-card .rec-by {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; letter-spacing: .12em; color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+/* Recipe reader (hands-free mode) */
+.recipe-reader {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, var(--bg-0), var(--bg-1));
+  z-index: 20;
+  padding: 32px 48px;
+  display: flex; flex-direction: column;
+  gap: 24px;
+}
+.reader-head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.reader-title {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 36px; color: var(--ink-0); font-weight: 500;
+}
+.reader-close {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: rgba(255,255,255,.05);
+  border: .5px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--ink-1); cursor: pointer;
+}
+.reader-step {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 32px 40px;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+  border: .5px solid var(--line-2);
+  border-radius: 24px;
+  position: relative;
+}
+.step-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 80px; line-height: .8;
+  color: var(--ink-0);
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+}
+.step-num .of {
+  font-family: 'Geist Mono', monospace;
+  font-size: 14px; color: var(--ink-3);
+  letter-spacing: .14em;
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+}
+.step-text {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 32px; line-height: 1.4;
+  color: var(--ink-0);
+  flex: 1;
+}
+.step-timer {
+  position: absolute; left: 32px; bottom: 32px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px;
+  background: rgba(255,180,92,.12);
+  border: .5px solid rgba(255,180,92,.4);
+  border-radius: 16px;
+}
+.step-timer .timer-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 44px; color: var(--warn); line-height: 1;
+  font-variant-numeric: tabular-nums; direction: ltr;
+}
+.step-timer .timer-lbl {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: .14em;
+  color: var(--ink-1); text-transform: uppercase;
+}
+
+.reader-controls {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 8px 0;
+}
+.voice-hint {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  background: rgba(123,224,166,.08);
+  border: .5px solid rgba(123,224,166,.3);
+  border-radius: 999px;
+}
+.voice-mic {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--good);
+  display: flex; align-items: center; justify-content: center;
+  color: #062014; font-size: 14px;
+  animation: pulse-mic 2s infinite;
+  position: relative;
+}
+.voice-mic::before {
+  content: ''; position: absolute; inset: -6px;
+  border-radius: 50%; border: 1.5px solid var(--good);
+  animation: ring 2s infinite;
+}
+@keyframes ring {
+  0% { transform: scale(.85); opacity: .6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+@keyframes pulse-mic {
+  0%,100% { box-shadow: 0 0 0 0 rgba(123,224,166,.4); }
+  50% { box-shadow: 0 0 0 8px rgba(123,224,166,0); }
+}
+.voice-hint-text {
+  font-size: 13px; color: var(--ink-1);
+}
+.voice-hint-text .heb { font-family: 'Heebo', sans-serif; }
+.voice-hint-text .en {
+  font-family: 'Geist Mono', monospace; font-size: 10px;
+  color: var(--ink-3); letter-spacing: .12em; margin-right: 8px;
+}
+.reader-btns { display: flex; gap: 10px; }
+.reader-btn {
+  padding: 12px 24px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.05);
+  border: .5px solid var(--line-2);
+  color: var(--ink-1);
+  font-size: 14px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.reader-btn.primary {
+  background: var(--ink-0); color: #0a0d14;
+  border-color: transparent;
+  font-weight: 500;
+}
+.reader-btn:hover { background: rgba(255,255,255,.08); }
+.reader-btn.primary:hover { background: #fff; }
+
+/* Notes / Bulletin board */
+.notes-board {
+  position: relative;
+  height: 100%;
+  padding: 12px;
+}
+.note {
+  position: absolute;
+  width: 200px;
+  padding: 16px 18px;
+  border-radius: 4px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.15) inset,
+    0 16px 30px -10px rgba(0,0,0,.5),
+    0 4px 10px -4px rgba(0,0,0,.4);
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px;
+  color: rgba(0,0,0,.78);
+  display: flex; flex-direction: column; gap: 8px;
+  transition: transform .2s;
+}
+.note:hover { transform: translateY(-2px) rotate(0deg) !important; }
+.note .note-from {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .14em;
+  color: rgba(0,0,0,.5);
+  text-transform: uppercase;
+}
+.note .note-text {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 17px; line-height: 1.35;
+  color: rgba(0,0,0,.85);
+  font-weight: 500;
+}
+.note .note-emoji { font-size: 28px; line-height: 1; }
+.note .note-when {
+  font-family: 'Geist Mono', monospace;
+  font-size: 8.5px; letter-spacing: .1em;
+  color: rgba(0,0,0,.4);
+  margin-top: 2px;
+}
+.note .note-pin {
+  position: absolute; top: -6px; right: 50%;
+  transform: translateX(50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff6b6b, #c0392b);
+  box-shadow: 0 2px 4px rgba(0,0,0,.4);
+}
+.note.color-mom { background: linear-gradient(180deg, #e8d4ff, #d4b8ff); }
+.note.color-dad { background: linear-gradient(180deg, #c4f4d8, #a8e8c0); }
+.note.color-ron { background: linear-gradient(180deg, #c4dcff, #a8c8ff); }
+.note.color-yuval { background: linear-gradient(180deg, #ffd0c0, #ffb8a0); }
+.note.color-fam { background: linear-gradient(180deg, #fff5b0, #ffe888); }
+
+.note-photo {
+  width: 100%; height: 100px;
+  border-radius: 2px;
+  margin-bottom: 4px;
+  background-size: cover; background-position: center;
+}
+.note .voice-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,.06);
+  border-radius: 8px;
+}
+.note .voice-bar .play {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,.5); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+}
+.note .voice-bar .wave {
+  flex: 1; height: 16px;
+  display: flex; align-items: center; gap: 2px;
+}
+.note .voice-bar .wave span {
+  flex: 1; background: rgba(0,0,0,.35); border-radius: 1px;
+}
+.note .voice-bar .dur {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; color: rgba(0,0,0,.55);
+}
+
+.notes-add {
+  position: absolute; bottom: 16px; left: 16px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px;
+  background: rgba(20,24,38,.8);
+  backdrop-filter: blur(20px);
+  border: .5px solid var(--line-2);
+  border-radius: 999px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .12em;
+  color: var(--ink-1); text-transform: uppercase;
+}
+.notes-add .qr {
+  width: 36px; height: 36px;
+  background: var(--ink-0);
+  border-radius: 6px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+.notes-add .qr span {
+  background: #0a0d14;
+}
+
+/* Photo frame */
+.photo-frame {
+  position: absolute; inset: 0;
+  background: #000;
+  z-index: 100;
+  overflow: hidden;
+  cursor: pointer;
+}
+.photo-frame .ph {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  animation: kenburns 18s ease-in-out infinite alternate;
+  opacity: 0; transition: opacity 1.2s;
+}
+.photo-frame .ph.active { opacity: 1; }
+@keyframes kenburns {
+  from { transform: scale(1) translate(0,0); }
+  to { transform: scale(1.12) translate(-2%, -1%); }
+}
+.photo-vignette {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.5) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.3) 0%, transparent 30%, transparent 60%, rgba(0,0,0,.7) 100%);
+  pointer-events: none;
+}
+.photo-meta {
+  position: absolute; bottom: 40px; right: 48px;
+  display: flex; flex-direction: column; gap: 4px;
+  pointer-events: none;
+  text-align: right;
+}
+.photo-meta .pm-date {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 36px; color: #fff; line-height: 1;
+  text-shadow: 0 2px 12px rgba(0,0,0,.6);
+}
+.photo-meta .pm-loc {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px; letter-spacing: .14em; color: rgba(255,255,255,.85);
+  text-transform: uppercase;
+  text-shadow: 0 1px 6px rgba(0,0,0,.6);
+}
+.photo-time {
+  position: absolute; top: 40px; right: 48px;
+  text-align: right;
+  pointer-events: none;
+}
+.photo-time .pt-clock {
+  font-family: 'Instrument Serif', serif;
+  font-size: 100px; line-height: .9; color: #fff;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  text-shadow: 0 4px 24px rgba(0,0,0,.7);
+}
+.photo-time .pt-date {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 24px; color: rgba(255,255,255,.9);
+  text-shadow: 0 2px 8px rgba(0,0,0,.6);
+}
+.photo-tap-hint {
+  position: absolute; bottom: 40px; left: 48px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .18em;
+  color: rgba(255,255,255,.55);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Photo grid (browse) */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 160px;
+  gap: 10px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 4px;
+  align-content: start;
+}
+.photo-tile {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: transform .2s;
+}
+.photo-tile:hover { transform: scale(1.02); }
+.photo-tile.tall { grid-row: span 2; }
+.photo-tile.wide { grid-column: span 2; }
+.photo-tile .photo-cap {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,.7));
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; letter-spacing: .12em; color: rgba(255,255,255,.85);
+  text-transform: uppercase;
+}
+
+/* Bottom widget strip on Home */
+.widget-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1.3fr;
+  gap: 14px;
+}
+.widget {
+  position: relative;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--glass-2), var(--glass));
+  border: .5px solid var(--line-2);
+  display: flex; align-items: center; gap: 14px;
+  overflow: hidden;
+}
+.widget .w-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9.5px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase;
+}
+.widget .w-title {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 16px; color: var(--ink-1); line-height: 1.1;
+}
+.widget .w-big {
+  font-family: 'Instrument Serif', serif;
+  font-size: 48px; line-height: .9;
+  color: var(--ink-0);
+  font-variant-numeric: tabular-nums; direction: ltr;
+}
+.widget .w-text {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 14px; line-height: 1.4; color: var(--ink-1);
+  text-wrap: pretty;
+}
+
+/* Holiday */
+.widget.holiday {
+  background:
+    radial-gradient(120% 80% at 0% 100%, rgba(123,224,166,.10), transparent 50%),
+    linear-gradient(180deg, var(--glass-2), var(--glass));
+}
+.widget.holiday .w-icon {
+  font-size: 32px; color: var(--good); opacity: .85;
+}
+
+/* History */
+.widget.history { padding: 14px 18px; }
+.widget.history .h-mark {
+  width: 38px; align-self: stretch;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 4px 0;
+  border-left: .5px solid var(--line);
+  padding-left: 12px;
+  flex-shrink: 0;
+}
+.widget.history .h-year {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px; color: var(--ink-1); line-height: 1;
+  font-variant-numeric: tabular-nums; direction: ltr;
+  font-style: italic;
+}
+.widget.history .h-lbl {
+  font-family: 'Geist Mono', monospace;
+  font-size: 8px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin-top: 4px;
+}
+
+/* Shabbat */
+.widget.shabbat {
+  background:
+    radial-gradient(140% 100% at 100% 0%, rgba(255,180,92,.16), transparent 55%),
+    linear-gradient(180deg, rgba(40,30,18,.6), rgba(20,16,10,.4));
+  border-color: rgba(255,180,92,.25);
+}
+.widget.shabbat .candle {
+  width: 50px; height: 64px; position: relative; flex-shrink: 0;
+}
+.widget.shabbat .candle .body {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 14px; height: 44px;
+  background: linear-gradient(180deg, #f4ead8, #d4c098);
+  border-radius: 2px 2px 0 0;
+}
+.widget.shabbat .candle .wick {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  width: 1.5px; height: 6px; background: #2a2010;
+}
+.widget.shabbat .candle .flame {
+  position: absolute; top: -2px; left: 50%; transform: translateX(-50%);
+  width: 14px; height: 22px;
+  background: radial-gradient(ellipse at 50% 70%, #fff7d6 0%, #ffd97a 35%, #ff8b3a 70%, transparent 95%);
+  border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+  filter: blur(.4px);
+  animation: flicker 1.6s ease-in-out infinite;
+  box-shadow: 0 0 16px rgba(255,200,120,.6), 0 0 28px rgba(255,140,60,.35);
+}
+.widget.shabbat .candle .flame::after {
+  content:''; position:absolute; inset:25% 30% 10% 30%;
+  background: radial-gradient(ellipse, #d6e8ff 0%, #6ba0ff 60%, transparent 80%);
+  border-radius: 50%; opacity:.7;
+}
+@keyframes flicker {
+  0%,100% { transform: translateX(-50%) scale(1) rotate(-1deg); opacity: 1; }
+  50% { transform: translateX(-50%) scale(1.05) rotate(2deg); opacity: .95; }
+}
+.widget.shabbat .sh-times {
+  display: flex; flex-direction: column; gap: 2px; flex: 1;
+}
+.widget.shabbat .sh-time-row {
+  display: flex; align-items: baseline; gap: 8px;
+  direction: ltr;
+}
+.widget.shabbat .sh-time-row .lbl {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase;
+}
+.widget.shabbat .sh-time-row .val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px; color: #ffd28a; line-height: 1;
+}
+.widget.shabbat .sh-parasha {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 14px; color: var(--ink-1); margin-top: 4px;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  position: fixed;
+  top: 18px; left: 18px;
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: var(--glass-2);
+  border: .5px solid var(--line-2);
+  color: var(--ink-1);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 40;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all .25s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+}
+.theme-toggle:hover {
+  color: var(--ink-0);
+  transform: translateY(-1px);
+}
+
+/* ── LIGHT THEME ──────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg: #f5f1ea;
+  --bg-2: #ece5d8;
+  --ink-0: #1a1814;
+  --ink-1: rgba(26,24,20,.85);
+  --ink-2: rgba(26,24,20,.62);
+  --ink-3: rgba(26,24,20,.45);
+  --line: rgba(26,24,20,.10);
+  --line-2: rgba(26,24,20,.18);
+  --glass: rgba(255,253,248,.72);
+  --glass-2: rgba(255,253,248,.86);
+  --ron: #2a6fdb;
+  --ron-soft: rgba(42,111,219,.10);
+  --yuval: #d65a3e;
+  --yuval-soft: rgba(214,90,62,.10);
+  --good: #1f8a5b;
+}
+html[data-theme="light"] body { background: #f5f1ea; color: var(--ink-0); }
+html[data-theme="light"] .app {
+  background:
+    radial-gradient(1200px 800px at 0% 0%, rgba(255,213,96,.10), transparent 60%),
+    radial-gradient(900px 700px at 100% 100%, rgba(123,176,255,.08), transparent 60%),
+    #f5f1ea;
+}
+html[data-theme="light"] .orb { opacity: .35; mix-blend-mode: multiply; }
+html[data-theme="light"] .grain { opacity: .08; }
+html[data-theme="light"] .card,
+html[data-theme="light"] .widget,
+html[data-theme="light"] .countdown-card,
+html[data-theme="light"] .month-cell,
+html[data-theme="light"] .event-row {
+  background: rgba(255,253,248,.72);
+  border-color: rgba(26,24,20,.10);
+  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 8px 24px -16px rgba(40,30,18,.18);
+}
+html[data-theme="light"] .month-cell.empty { background: transparent; border-color: rgba(26,24,20,.04); }
+html[data-theme="light"] .month-cell.weekend { background: rgba(26,24,20,.025); }
+html[data-theme="light"] .month-cell.today { background: rgba(31,138,91,.08); border-color: rgba(31,138,91,.4); }
+html[data-theme="light"] .dock { background: rgba(255,253,248,.78); border-color: rgba(26,24,20,.10); box-shadow: 0 8px 32px -8px rgba(40,30,18,.18); }
+html[data-theme="light"] .dock-tab.active { background: rgba(26,24,20,.06); color: var(--ink-0); }
+html[data-theme="light"] .countdown-overlay { background: rgba(245,241,234,.85); }
+html[data-theme="light"] .widget.shabbat {
+  background: linear-gradient(180deg, #fff5e0, #ffe6b8);
+  border-color: rgba(214,148,42,.25);
+}
+html[data-theme="light"] .widget.shabbat .sh-time-row .val { color: #a86b1a; }
+html[data-theme="light"] .widget.holiday { background: linear-gradient(180deg, #f0f8ee, #e0eedc); }
+html[data-theme="light"] .pinned-strip { background: linear-gradient(90deg, rgba(214,148,42,.10), rgba(255,213,96,.04)); border-color: rgba(214,148,42,.25); }
+html[data-theme="light"] .pinned-label { color: #a86b1a; }
+html[data-theme="light"] .ev-tag.holiday { background: rgba(214,148,42,.12); color: #a86b1a; border-color: rgba(214,148,42,.3); }
+html[data-theme="light"] .ev-tag.vacation { background: rgba(31,138,91,.10); color: var(--good); border-color: rgba(31,138,91,.3); }
+html[data-theme="light"] .ev-tag.custom { background: rgba(42,111,219,.10); color: var(--ron); border-color: rgba(42,111,219,.3); }
+html[data-theme="light"] .mc-evt.holiday { background: rgba(214,148,42,.10); color: #a86b1a; border-color: rgba(214,148,42,.2); }
+html[data-theme="light"] .mc-evt.vacation { background: rgba(31,138,91,.10); color: var(--good); border-color: rgba(31,138,91,.2); }
+html[data-theme="light"] .mc-evt.custom { background: rgba(42,111,219,.10); color: var(--ron); border-color: rgba(42,111,219,.2); }
+html[data-theme="light"] .mc-evt.fast { background: rgba(26,24,20,.05); }
+html[data-theme="light"] .cd-bar { background: rgba(26,24,20,.08); }
+
+/* Events list rows */
+.event-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,.025);
+  border: .5px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.event-row:hover {
+  background: rgba(255,255,255,.05);
+  border-color: var(--line-2);
+  transform: translateY(-1px);
+}
+.event-row .ev-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.event-row .ev-name {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 18px; color: var(--ink-0); font-weight: 500;
+  line-height: 1;
+}
+.event-row .ev-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--ink-2);
+}
+.event-row .ev-tag {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.event-row .ev-tag.holiday {
+  background: rgba(255,213,96,.12); color: #ffd560;
+  border: .5px solid rgba(255,213,96,.3);
+}
+.event-row .ev-tag.vacation {
+  background: rgba(123,224,166,.12); color: var(--good);
+  border: .5px solid rgba(123,224,166,.3);
+}
+.event-row .ev-tag.fast {
+  background: rgba(255,255,255,.04); color: var(--ink-2);
+  border: .5px solid var(--line-2);
+}
+.event-row .ev-days {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 60px;
+  padding: 6px 12px;
+  border-right: .5px solid var(--line);
+  padding-right: 14px;
+  flex-shrink: 0;
+}
+.event-row .ev-days .n {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px; line-height: 1; color: var(--ink-0);
+  font-variant-numeric: tabular-nums; direction: ltr;
+}
+.event-row .ev-days .l {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase; margin-top: 2px;
+}
+
+/* Countdown overlay */
+.countdown-overlay {
+  position: absolute; inset: 0;
+  background: rgba(8,10,16,.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .3s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.countdown-card {
+  width: 720px;
+  padding: 48px 56px;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border: .5px solid var(--line-2);
+  border-radius: 28px;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 40px 80px -20px rgba(0,0,0,.6);
+  animation: cdSlideUp .4s cubic-bezier(.2,.9,.3,1.1);
+}
+@keyframes cdSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.cd-icon { font-size: 64px; line-height: 1; }
+.cd-kind {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .2em; color: var(--ink-3);
+  text-transform: uppercase; margin-top: 12px;
+}
+.cd-name {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 56px; color: var(--ink-0); line-height: 1;
+  font-weight: 500; margin-top: 8px;
+}
+.cd-date {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 18px; color: var(--ink-1); margin-top: 8px;
+}
+.cd-counter {
+  display: flex; align-items: flex-start; justify-content: center;
+  gap: 12px; margin-top: 36px;
+  direction: ltr;
+}
+.cd-unit { display: flex; flex-direction: column; align-items: center; min-width: 96px; }
+.cd-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 96px; line-height: .9; color: var(--ink-0);
+  font-variant-numeric: tabular-nums;
+  font-style: italic;
+}
+.cd-lbl {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .2em; color: var(--ink-3);
+  text-transform: uppercase; margin-top: 8px;
+}
+.cd-sep {
+  font-family: 'Instrument Serif', serif;
+  font-size: 64px; color: var(--ink-3);
+  font-style: italic;
+  margin-top: 8px;
+}
+.cd-progress { margin-top: 36px; direction: rtl; }
+.cd-bar {
+  height: 4px;
+  background: rgba(255,255,255,.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cd-bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--good), #ffd560);
+  border-radius: 2px;
+}
+.cd-progress-lbl {
+  display: flex; justify-content: space-between;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: .12em; color: var(--ink-3);
+  text-transform: uppercase; margin-top: 8px;
+}
+
+.event-row.pinned {
+  background: linear-gradient(90deg, rgba(255,213,96,.06), rgba(255,255,255,.025));
+  border-color: rgba(255,213,96,.25);
+}
+.event-row .ev-tag.custom {
+  background: rgba(123,176,255,.12); color: #9bc2ff;
+  border: .5px solid rgba(123,176,255,.3);
+}
+
+/* Countdown pin button */
+.cd-pin {
+  position: absolute; top: 20px; right: 20px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 13px;
+  background: rgba(255,255,255,.04);
+  color: var(--ink-2);
+  border: .5px solid var(--line-2);
+  cursor: pointer;
+  transition: all .2s;
+}
+.cd-pin:hover { background: rgba(255,255,255,.08); color: var(--ink-1); }
+.cd-pin.on {
+  background: rgba(255,213,96,.12);
+  color: #ffd560;
+  border-color: rgba(255,213,96,.4);
+}
+
+/* Month grid */
+.month-head {
+  display: flex; align-items: center; gap: 14px;
+  padding-bottom: 4px;
+}
+.month-nav {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  border: .5px solid var(--line);
+  cursor: pointer;
+  font-size: 22px; color: var(--ink-1);
+  font-family: 'Instrument Serif', serif;
+  user-select: none;
+}
+.month-nav:hover { background: rgba(255,255,255,.08); color: var(--ink-0); }
+.month-title { display: flex; align-items: baseline; gap: 8px; }
+.month-title .mt-name {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 26px; color: var(--ink-0); font-weight: 500;
+}
+.month-title .mt-year {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px; color: var(--ink-3); font-style: italic;
+  direction: ltr;
+}
+.month-grid { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.month-dow {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.dow-cell {
+  text-align: center;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+.month-cells {
+  flex: 1; display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+  min-height: 0;
+}
+.month-cell {
+  background: rgba(255,255,255,.018);
+  border: .5px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+.month-cell.empty {
+  background: transparent;
+  border-color: rgba(255,255,255,.025);
+}
+.month-cell.weekend { background: rgba(255,255,255,.03); }
+.month-cell.past { opacity: .45; }
+.month-cell.today {
+  background: rgba(123,224,166,.08);
+  border-color: rgba(123,224,166,.4);
+  box-shadow: 0 0 0 1px rgba(123,224,166,.2) inset;
+}
+.month-cell.has { cursor: pointer; transition: all .2s; }
+.month-cell.has:hover {
+  background: rgba(255,255,255,.06);
+  border-color: var(--line-2);
+  transform: translateY(-1px);
+}
+.mc-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px; line-height: 1;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  align-self: flex-start;
+}
+.month-cell.today .mc-num { color: var(--good); }
+.mc-events { display: flex; flex-direction: column; gap: 3px; min-height: 0; overflow: hidden; }
+.mc-evt {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 10.5px;
+  background: rgba(255,255,255,.04);
+  color: var(--ink-1);
+  white-space: nowrap; overflow: hidden;
+}
+.mc-evt .mc-icon { font-size: 10px; flex-shrink: 0; }
+.mc-evt .mc-name { overflow: hidden; text-overflow: ellipsis; }
+.mc-evt.holiday { background: rgba(255,213,96,.10); color: #ffd560; border: .5px solid rgba(255,213,96,.18); }
+.mc-evt.vacation { background: rgba(123,224,166,.10); color: var(--good); border: .5px solid rgba(123,224,166,.18); }
+.mc-evt.fast { background: rgba(255,255,255,.04); color: var(--ink-2); }
+.mc-evt.custom { background: rgba(123,176,255,.10); color: #9bc2ff; border: .5px solid rgba(123,176,255,.18); }
+.mc-evt.pinned { box-shadow: 0 0 0 1px rgba(255,213,96,.4) inset; }
+.mc-more {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px; letter-spacing: .1em;
+  color: var(--ink-3);
+  padding: 0 4px;
+}
+
+/* Section heading inside screens */
+.screen-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.screen-h1 {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 32px; line-height: 1; color: var(--ink-0);
+  font-weight: 500;
+}
+.screen-sub {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+
+/* Google Fonts override */
+body, .app, html {
   font-family: 'Frank Ruhl Libre', serif;
 }
 </style>
