@@ -1672,82 +1672,130 @@ async function loadFamilyData() {
       return {
         name: kidName, initial, grade, en: gradeEn,
         now: emptyNow, next: [], homework: [],
-        test: emptyTest, lessonEvents: [], weeklyPlan: []
+        test: emptyTest, lessonEvents: [], weeklyPlan: {},
+        messages: [], notifications: []
       };
     }
 
-    const nowHour = today.getHours() * 60 + today.getMinutes();
-    const todayDow = DOW; // 0=Sun
+    const DAY_HEB_NAMES = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+    const todayDow = DOW;
+    const todayDayName = DAY_HEB_NAMES[todayDow];
+    const nowMin = today.getHours() * 60 + today.getMinutes();
 
-    // Map weekly plan to today's schedule
-    const dayNames = { 'ראשון': 0, 'שני': 1, 'שלישי': 2, 'רביעי': 3, 'חמישי': 4, 'שישי': 5 };
-    const todayLessons = [];
-    if (kidData.weekly_plan) {
-      for (const dayPlan of kidData.weekly_plan) {
-        const dayNum = dayNames[dayPlan.day];
-        if (dayNum === todayDow) {
-          for (const lesson of (dayPlan.lessons || [])) {
-            todayLessons.push({
-              time: lesson.time || '',
-              name: lesson.subject || lesson.name || '',
-              room: lesson.room || lesson.teacher || '',
-            });
-          }
-        }
+    // Convert period/time string to minutes
+    const toMin = (s) => {
+      if (!s) return null;
+      const str = String(s);
+      if (str.includes(':')) {
+        const [h, m] = str.split(':').map(Number);
+        return (h||0)*60 + (m||0);
       }
-    }
+      const n = Number(str);
+      if (Number.isFinite(n)) {
+        // Period number → time (period 1 ≈ 08:00)
+        const p2m = [null, 8*60, 8*60+50, 9*60+50, 10*60+40, 11*60+30, 12*60+25, 13*60+15, 14*60+5, 14*60+55, 15*60+45];
+        return p2m[n] ?? n*60;
+      }
+      return null;
+    };
 
-    // Find current and next lessons
+    // weekly_plan is a DICT: { "ראשון": [{period, subject, teacher, topic, date}], ... }
+    const weeklyPlanDict = kidData.weekly_plan || {};
+
+    const todayLessons = (weeklyPlanDict[todayDayName] || []).map(l => ({
+      time: String(l.period || ''),
+      name: l.subject || '',
+      room: l.teacher || '',
+      _min: toMin(l.period),
+    })).sort((a,b) => (a._min ?? 0) - (b._min ?? 0));
+
     let nowLesson = null, nextLessons = [];
-    for (let i = 0; i < todayLessons.length; i++) {
-      const lesson = todayLessons[i];
-      const [h, m] = (lesson.time || '08:00').split(':').map(Number);
-      const lessonMin = (h || 0) * 60 + (m || 0);
-      if (Math.abs(lessonMin - nowHour) < 60 && !nowLesson) {
+    for (const lesson of todayLessons) {
+      if (lesson._min == null) continue;
+      if (!nowLesson && lesson._min <= nowMin && nowMin <= lesson._min + 45) {
         nowLesson = lesson;
-      } else if (lessonMin > nowHour && nextLessons.length < 3) {
+      } else if (lesson._min > nowMin && nextLessons.length < 3) {
         nextLessons.push(lesson);
       }
     }
 
-    // If no lesson found for today, show first 4 lessons of today
-    if (!nowLesson && todayLessons.length > 0) {
-      nowLesson = todayLessons[0];
-      nextLessons = todayLessons.slice(1, 4);
+    // No lesson now → show first lessons of next school day
+    if (!nowLesson) {
+      for (let i = 1; i <= 7; i++) {
+        const dow = (todayDow + i) % 7;
+        const dayLessons = weeklyPlanDict[DAY_HEB_NAMES[dow]];
+        if (dayLessons && dayLessons.length > 0) {
+          const sorted = [...dayLessons].sort((a,b) => (toMin(a.period) ?? 0) - (toMin(b.period) ?? 0));
+          nowLesson = { time: String(sorted[0].period||''), name: sorted[0].subject||'', room: sorted[0].teacher||'' };
+          nextLessons = sorted.slice(1, 4).map(l => ({ time: String(l.period||''), name: l.subject||'', room: l.teacher||'' }));
+          break;
+        }
+      }
+      if (!nowLesson) nowLesson = emptyNow;
     }
 
-    // Map homework
-    const homework = (kidData.homework || []).slice(0, 5).map(hw => ({
-      subj: (hw.subject || hw.subj || '').slice(0, 6),
-      text: hw.description || hw.text || '',
-      done: false,
-    }));
+    // homework: real fields are {date, day, period, subject, teacher, topic, hw}
+    const todayISO = today.toISOString().slice(0, 10);
+    const homework = (kidData.homework || [])
+      .filter(hw => (hw.hw && hw.hw.trim()) && (!hw.date || hw.date >= todayISO))
+      .slice(0, 6)
+      .map(hw => ({
+        subj: (hw.subject || '').slice(0, 8),
+        text: hw.hw || hw.topic || '',
+        done: false,
+        date: hw.date || '',
+      }));
 
-    // Map lesson events (discipline events)
-    const lessonEvents = (kidData.lesson_events || []).slice(0, 5).map(ev => ({
+    const lessonEvents = (kidData.lesson_events || []).slice(0, 8).map(ev => ({
       type: ev.type || '',
       date: ev.date || '',
-      note: ev.note || ev.group || '',
+      note: ev.note || ev.subject || '',
+      subject: ev.subject || '',
+    }));
+
+    const messages = (kidData.messages || []).slice(0, 12).map(m => ({
+      sender: m.sender || '',
+      date: m.date || '',
+      subject: m.subject || '',
+      id: m.id || '',
+      unread: !!m.unread,
+    }));
+
+    const notifications = (kidData.notifications || []).slice(0, 12).map(n => ({
+      id: n.id || '',
+      title: n.title || '',
+      body: n.body || '',
+      date: n.date || '',
+      type: n.type || '',
+      unread: !!n.unread,
     }));
 
     return {
       name: kidName, initial, grade, en: gradeEn,
-      now: nowLesson || emptyNow,
-      next: nextLessons,
-      homework,
-      test: emptyTest,
-      lessonEvents,
-      weeklyPlan: kidData.weekly_plan || [],
+      now: nowLesson, next: nextLessons,
+      homework, test: emptyTest, lessonEvents,
+      messages, notifications,
+      weeklyPlan: weeklyPlanDict,
     };
   }
 
-  // Build kids data
-  const students = (webtop && webtop.students) || {};
-  const yuvalKey = Object.keys(students).find(k => k.includes('יובל')) || 'יובל';
-  const ronKey = Object.keys(students).find(k => k.includes('רון')) || 'רון';
+  // Build kids data - scraper outputs students as ARRAY
+  let yuvalData = null, ronData = null;
+  if (webtop && Array.isArray(webtop.students)) {
+    for (const s of webtop.students) {
+      if (s.name && s.name.includes('יובל')) yuvalData = s;
+      else if (s.name && s.name.includes('רון')) ronData = s;
+    }
+  } else if (webtop && webtop.students) {
+    const keys = Object.keys(webtop.students);
+    const yKey = keys.find(k => k.includes('יובל'));
+    const rKey = keys.find(k => k.includes('רון'));
+    if (yKey) yuvalData = webtop.students[yKey];
+    if (rKey) ronData = webtop.students[rKey];
+  }
 
-  data.yuval = mapKid(students[yuvalKey], 'יובל', 'י', 'כיתה ב׳', 'GRADE 2');
-  data.ron   = mapKid(students[ronKey],   'רון',   'ר', 'כיתה ו׳', 'GRADE 6');
+  data.yuval = mapKid(yuvalData, 'יובל', 'י', 'כיתה ב׳', 'GRADE 2');
+  data.ron   = mapKid(ronData,   'רון',   'ר', 'כיתה ו׳', 'GRADE 6');
 
   // ── 4. Week view (combine calendar + webtop) ─────────────
   const weekDays = [];
@@ -3404,6 +3452,148 @@ function renderWhenReady() {
 }
 renderWhenReady();
 
+</script>
+
+
+<style>
+/* Webtop notifications/messages floating panel */
+#wb-panel {
+  position: fixed; top: 12px; left: 12px; z-index: 999;
+  display: flex; gap: 10px; flex-direction: column;
+  font-family: 'Frank Ruhl Libre', serif;
+  direction: rtl;
+}
+.wb-kid {
+  background: rgba(20,25,38,.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(244,241,234,.1);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex; gap: 12px; align-items: center;
+  min-width: 180px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.wb-kid-name {
+  font-size: 16px; font-weight: 500; color: #f4f1ea;
+  margin-left: 4px;
+}
+.wb-kid-name.ron { color: #5aa9ff; }
+.wb-kid-name.yuval { color: #ff8a6b; }
+.wb-actions { display: flex; gap: 8px; }
+.wb-btn {
+  background: rgba(244,241,234,.08);
+  border: 1px solid rgba(244,241,234,.12);
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: #f4f1ea;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: all .15s;
+  text-decoration: none;
+}
+.wb-btn:hover, .wb-btn:active {
+  background: rgba(244,241,234,.16);
+  transform: translateY(-1px);
+}
+.wb-btn .icon { font-size: 14px; }
+.wb-btn .count {
+  background: rgba(255,138,107,.9);
+  color: #0a0d14;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 11px;
+  min-width: 14px; text-align: center;
+}
+.wb-btn .count.zero { display: none; }
+.wb-btn.has-unread { border-color: rgba(255,138,107,.5); box-shadow: 0 0 0 1px rgba(255,138,107,.3); }
+</style>
+
+<div id="wb-panel"></div>
+
+<script>
+// Build the Webtop quick-access panel once FAMILY data is loaded
+function buildWebtopPanel() {
+  const F = window.FAMILY;
+  if (!F) return;
+  const panel = document.getElementById('wb-panel');
+  if (!panel) return;
+
+  const WEBTOP_BASE = 'https://webtop.smartschool.co.il';
+  const MSG_URL = WEBTOP_BASE + '/Messages';
+  const NOTIF_URL = WEBTOP_BASE + '/notification';
+
+  // Persisted "read" state in localStorage
+  const KEY = 'wb_read_v1';
+  let read = {};
+  try { read = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){}
+
+  function unreadCount(items, idPrefix) {
+    if (!items) return 0;
+    return items.filter(it => it.unread && !read[idPrefix + ':' + (it.id || it.subject || it.title)]).length;
+  }
+
+  function markAllRead(items, idPrefix) {
+    if (!items) return;
+    items.forEach(it => {
+      read[idPrefix + ':' + (it.id || it.subject || it.title)] = 1;
+    });
+    try { localStorage.setItem(KEY, JSON.stringify(read)); } catch(e){}
+  }
+
+  function kidPill(kid, cssClass) {
+    const msgs = kid.messages || [];
+    const notifs = kid.notifications || [];
+    const msgUnread = unreadCount(msgs, kid.name + '_msg');
+    const notifUnread = unreadCount(notifs, kid.name + '_notif');
+
+    const totalMsg = msgs.length;
+    const totalNotif = notifs.length;
+
+    const div = document.createElement('div');
+    div.className = 'wb-kid';
+    div.innerHTML = `
+      <div class="wb-kid-name ${cssClass}">${kid.name}</div>
+      <div class="wb-actions">
+        <a class="wb-btn ${msgUnread > 0 ? 'has-unread' : ''}" href="${MSG_URL}" target="_blank" rel="noopener" data-mark="${cssClass}_msg">
+          <span class="icon">✉</span>
+          <span>הודעות</span>
+          <span class="count ${msgUnread === 0 ? 'zero' : ''}">${msgUnread || totalMsg}</span>
+        </a>
+        <a class="wb-btn ${notifUnread > 0 ? 'has-unread' : ''}" href="${NOTIF_URL}" target="_blank" rel="noopener" data-mark="${cssClass}_notif">
+          <span class="icon">🔔</span>
+          <span>התראות</span>
+          <span class="count ${notifUnread === 0 ? 'zero' : ''}">${notifUnread || totalNotif}</span>
+        </a>
+      </div>
+    `;
+    // Add click handler to mark as read locally (won't survive scraper, but feels responsive)
+    div.querySelectorAll('a[data-mark]').forEach(a => {
+      a.addEventListener('click', () => {
+        const mark = a.getAttribute('data-mark');
+        if (mark.includes('msg')) markAllRead(msgs, kid.name + '_msg');
+        if (mark.includes('notif')) markAllRead(notifs, kid.name + '_notif');
+        // refresh panel after short delay
+        setTimeout(buildWebtopPanel, 300);
+      });
+    });
+    return div;
+  }
+
+  panel.innerHTML = '';
+  panel.appendChild(kidPill(F.ron, 'ron'));
+  panel.appendChild(kidPill(F.yuval, 'yuval'));
+}
+
+// Watch for FAMILY to be ready
+const wbPanelInterval = setInterval(() => {
+  if (window.FAMILY) {
+    clearInterval(wbPanelInterval);
+    buildWebtopPanel();
+  }
+}, 200);
 </script>
 
 </body>

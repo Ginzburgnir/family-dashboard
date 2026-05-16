@@ -321,8 +321,52 @@ def parse_messages(captured):
         sender = f"{item.get('student_F_name','')} {item.get('student_L_name','')}".strip()
         date   = str(item.get("sendingDate",""))[:10]
         subj   = str(item.get("subject",""))
-        msgs.append({"sender": sender, "date": date, "subject": subj})
+        msg_id = item.get("messageID") or item.get("messageId") or item.get("id") or ""
+        is_new = bool(item.get("isNew") or item.get("isUnread") or item.get("unread"))
+        msgs.append({
+            "sender": sender, "date": date, "subject": subj,
+            "id": str(msg_id), "unread": is_new,
+        })
     return msgs
+
+def parse_notifications(captured, cdk_fallback=None):
+    """Parse notifications - try several known shapes, fall back to table scrape."""
+    notifs = []
+    # Try API shapes
+    for key, data in captured.items():
+        if not isinstance(data, dict): continue
+        items = data.get("data")
+        if isinstance(items, dict):
+            items = items.get("notifications") or items.get("items") or items.get("data") or []
+        if not isinstance(items, list): continue
+        for item in items[:20]:
+            if not isinstance(item, dict): continue
+            title  = str(item.get("title") or item.get("subject") or item.get("notificationTitle") or item.get("text") or "")
+            body   = str(item.get("description") or item.get("body") or item.get("notificationBody") or item.get("message") or "")
+            date   = str(item.get("date") or item.get("notificationDate") or item.get("createdDate") or item.get("sendingDate") or "")[:10]
+            ntype  = str(item.get("type") or item.get("notificationType") or item.get("category") or "")
+            nid    = item.get("id") or item.get("notificationId") or item.get("notificationID") or ""
+            unread = bool(item.get("isNew") or item.get("isUnread") or item.get("unread") or item.get("isRead") is False)
+            if title or body:
+                notifs.append({
+                    "id": str(nid), "title": title, "body": body[:200],
+                    "date": date, "type": ntype, "unread": unread,
+                })
+        if notifs:
+            break
+    # Fallback: scrape visible rows
+    if not notifs and cdk_fallback:
+        for row in cdk_fallback:
+            if not row or not any(row): continue
+            text = " · ".join(c for c in row if c)
+            if text and len(text) > 3:
+                notifs.append({
+                    "id": "", "title": row[0] if len(row) > 0 else "",
+                    "body": row[1] if len(row) > 1 else "",
+                    "date": row[-1] if len(row) > 2 else "",
+                    "type": "", "unread": False,
+                })
+    return notifs[:20]
 
 # ── SCRAPE ─────────────────────────────────────────────────────
 async def scrape_student(browser, username, password, name):
@@ -330,7 +374,7 @@ async def scrape_student(browser, username, password, name):
     context = await browser.new_context(
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     page = await context.new_page()
-    data = {"name":name,"weekly_plan":{},"lesson_events":[],"homework":[],"messages":[],
+    data = {"name":name,"weekly_plan":{},"lesson_events":[],"homework":[],"messages":[],"notifications":[],
             "last_updated":datetime.now().isoformat(),"error":None}
     try:
         if not await login(page, username, password):
@@ -387,6 +431,14 @@ async def scrape_student(browser, username, password, name):
         data["messages"] = parse_messages(cap)
         print(f"  -> {len(data['messages'])} messages")
 
+        # Notifications
+        print("  [notifications]")
+        cap = await intercept_nav(page, BASE+"/notification",
+            keywords=["Notification","notification","Alert","alert"], extra_wait=4)
+        rows = await get_cdk_rows(page)
+        data["notifications"] = parse_notifications(cap, cdk_fallback=rows)
+        print(f"  -> {len(data['notifications'])} notifications")
+
     except Exception as e:
         import traceback
         print(f"ERROR: {e}"); data["error"] = str(e)
@@ -420,7 +472,8 @@ async def main():
     for s in result["students"]:
         print(f"  {s['name']}: {len(s['weekly_plan'])} days | "
               f"{len(s['lesson_events'])} events | "
-              f"{len(s['homework'])} hw | {len(s['messages'])} msgs")
+              f"{len(s['homework'])} hw | {len(s['messages'])} msgs | "
+              f"{len(s.get('notifications', []))} notifs")
 
 if __name__ == "__main__":
     asyncio.run(main())
