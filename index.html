@@ -169,7 +169,7 @@ body { font-family: 'Heebo', system-ui, sans-serif; }
 /* HOME */
 .home-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1.8fr 1fr;
+  grid-template-columns: 1fr 1.6fr 1fr;
   grid-template-rows: auto minmax(0,1fr) auto auto;
   gap: 10px;
   height: 100%;
@@ -280,14 +280,14 @@ body { font-family: 'Heebo', system-ui, sans-serif; }
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 28px;
+  gap: 20px;
   align-items: center;
-  padding: 22px 28px;
+  padding: 14px 24px;
 }
 
 .clock-big {
   font-family: 'Instrument Serif', serif;
-  font-size: 132px; line-height: .85;
+  font-size: 108px; line-height: .85;
   letter-spacing: -.04em;
   color: var(--ink-0);
   font-variant-numeric: tabular-nums;
@@ -300,19 +300,19 @@ body { font-family: 'Heebo', system-ui, sans-serif; }
 }
 @keyframes blink { 50% { opacity: .3; } }
 
-.date-block { display: flex; flex-direction: column; gap: 4px; }
+.date-block { display: flex; flex-direction: column; gap: 3px; }
 .date-block .day-heb {
   font-family: 'Frank Ruhl Libre', serif;
-  font-size: 36px; font-weight: 500; line-height: 1;
+  font-size: 28px; font-weight: 500; line-height: 1;
 }
 .date-block .heb-d {
   font-family: 'Frank Ruhl Libre', serif;
-  font-size: 22px; color: var(--ink-1); line-height: 1.1;
+  font-size: 18px; color: var(--ink-1); line-height: 1.1;
 }
 .date-block .greg {
   font-family: 'Geist Mono', monospace;
-  font-size: 11px; letter-spacing: .14em; color: var(--ink-3);
-  text-transform: uppercase; margin-top: 4px;
+  font-size: 10px; letter-spacing: .14em; color: var(--ink-3);
+  text-transform: uppercase; margin-top: 3px;
 }
 
 .weather-block {
@@ -3235,73 +3235,111 @@ function HomeScreen({ now, pinnedIds, togglePin, actTick }) {
         <div className="card-title" style={{marginTop:4,display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
           <span>היום במשפחה</span>
           <span style={{fontFamily:'Geist Mono, monospace',fontSize:11,letterSpacing:'.12em',color:'var(--ink-3)'}}>
-            {mergedToday.length} EVENTS
+            {mergedToday.filter(e=>e.tag!=='school').length} EVENTS
           </span>
         </div>
         <div className="today-groups">
           {(() => {
-            const ronEvs = mergedToday.filter(e => e.who === 'ron');
-            const yuvalEvs = mergedToday.filter(e => e.who === 'yuval');
-            const familyEvs = mergedToday.filter(e => e.who === 'family');
+            const todayNonSchool = mergedToday.filter(e => e.tag !== 'school');
+            const ronEvs    = todayNonSchool.filter(e => e.who === 'ron');
+            const yuvalEvs  = todayNonSchool.filter(e => e.who === 'yuval');
+            const yahavEvs  = todayNonSchool.filter(e => e.who === 'yahav');
+            const familyEvs = todayNonSchool.filter(e => e.who === 'family');
             const groups = [
-              { key: 'ron', title: 'רון', evs: ronEvs, accent: 'var(--ron)' },
-              { key: 'yuval', title: 'יובל', evs: yuvalEvs, accent: 'var(--yuval)' },
-              { key: 'family', title: 'המשפחה', evs: familyEvs, accent: '#ffd560' },
-            ];
+              { key:'ron',    title:'רון',    evs:ronEvs,    accent:'var(--ron)' },
+              { key:'yuval',  title:'יובל',   evs:yuvalEvs,  accent:'var(--yuval)' },
+              { key:'yahav',  title:'יהב',    evs:yahavEvs,  accent:'var(--good)' },
+              { key:'family', title:'משפחה',  evs:familyEvs, accent:'#ffd560' },
+            ].filter(g => g.evs.length > 0);
+            if (groups.length === 0) return (
+              <div style={{padding:'16px 8px',color:'var(--ink-3)',fontFamily:'Frank Ruhl Libre, serif',fontSize:15,fontStyle:'italic',textAlign:'center'}}>אין אירועים מיוחדים היום</div>
+            );
             return groups.map(g => (
               <div key={g.key} className={`tg-group tg-${g.key}`}>
                 <div className="tg-title" style={{color: g.accent}}>{g.title}</div>
-                {g.evs.length === 0 ? (
-                  <div className="tg-empty">אין אירועים</div>
-                ) : (
-                  <div className="tg-list">
-                    {g.evs.map((e,i) => (
-                      <div key={i} className={`tg-row ${e.tag} ${e.state}`}>
-                        <div className="tg-time">{e.time}</div>
-                        <div className="tg-dot" style={{background: g.accent}}/>
-                        <div className="tg-text">{e.text}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="tg-list">
+                  {g.evs.map((e,i) => (
+                    <div key={i} className={`tg-row ${e.tag} ${e.state||''}`}>
+                      <div className="tg-time">{e.time}</div>
+                      <div className="tg-dot" style={{background: g.accent}}/>
+                      <div className="tg-text">{e.text}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ));
           })()}
         </div>
 
-        {/* —— מחר במשפחה —— */}
-        {mergedTmr && mergedTmr.length > 0 && (
-          <>
-            <div className="card-title" style={{marginTop:8,display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-              <span>מחר במשפחה</span>
-              <span style={{fontFamily:'Geist Mono, monospace',fontSize:11,letterSpacing:'.12em',color:'var(--ink-3)'}}>{['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][(new Date().getDay()+1)%7]}</span>
-            </div>
-            <div className="today-groups">
-              {(() => {
-                const groups = [
-                  {key:'ron-t',title:'רון',evs:mergedTmr.filter(e=>e.who==='ron'),accent:'var(--ron)'},
-                  {key:'yuval-t',title:'יובל',evs:mergedTmr.filter(e=>e.who==='yuval'),accent:'var(--yuval)'},
-                  {key:'yahav-t',title:'יהב',evs:mergedTmr.filter(e=>e.who==='yahav'),accent:'var(--good)'},
-                  {key:'fam-t',title:'משפחה',evs:mergedTmr.filter(e=>e.who==='family'),accent:'#ffd560'},
-                ].filter(g=>g.evs.length>0);
-                return groups.map(g=>(
-                  <div key={g.key} className="tg-group">
-                    <div className="tg-title" style={{color:g.accent,opacity:.75}}>{g.title}</div>
-                    <div className="tg-list">
-                      {g.evs.map((e,i)=>(
-                        <div key={i} className={`tg-row ${e.tag}`} style={{opacity:.75}}>
-                          <div className="tg-time">{e.time}</div>
-                          <div className="tg-dot" style={{background:g.accent,opacity:.5}}/>
-                          <div className="tg-text">{e.text}</div>
+        {/* —— אירועים קרובים — 7 ימים —— */}
+        {(() => {
+          const DAY_NAMES_7 = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+          const HEB_MONTHS  = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+          const todayD = new Date(); todayD.setHours(0,0,0,0);
+          const days = Array.from({length:7}, (_,i) => {
+            const d = new Date(todayD.getTime() + (i+1)*86400000);
+            return { date:d, dow:d.getDay(), daysAway:i+1,
+              label: i===0 ? 'מחר' : DAY_NAMES_7[d.getDay()],
+              dateStr: `${d.getDate()} ב${HEB_MONTHS[d.getMonth()]}` };
+          });
+          const allActs = (() => { try { return JSON.parse(localStorage.getItem('fd_activities_v2')||'{}'); } catch(e){return{};} })();
+          const allExcs = (() => { try { return JSON.parse(localStorage.getItem('fd_exceptions_v2')||'{}'); } catch(e){return{};} })();
+          const rows = [];
+          days.forEach(day => {
+            const dayEvs = [];
+            (F.events||[]).forEach(ev => {
+              if (ev.daysAway === day.daysAway) {
+                const icon = ev.kind==='birthday'?'🎂': ev.kind==='custom'?'📅': ev.kind==='holiday'?'✦':'☀';
+                dayEvs.push({ time: ev.startTime||icon, text: ev.name+(ev.location?' · '+ev.location:''),
+                  color: ev.kind==='birthday'?'#ffd560': ev.kind==='custom'?'#7ab3f8':'var(--good)' });
+              }
+            });
+            const weekKey = getWeekKey(day.date);
+            [['ron','var(--ron)'],['yuval','var(--yuval)'],['yahav','var(--good)']].forEach(([key,color]) => {
+              (allActs[key]||[]).filter(a=>!a.paused).forEach(act => {
+                (act.days||[]).forEach(origDay => {
+                  const exc = (allExcs[key]||[]).find(e=>e.actId===act.id&&e.weekKey===weekKey&&e.origDay===origDay);
+                  if (exc?.cancelled) return;
+                  const effDay = exc?.overrideDay!=null ? exc.overrideDay : origDay;
+                  if (effDay !== day.dow) return;
+                  const base = (act.dayTimes&&act.dayTimes[origDay]) ? act.dayTimes[origDay] : act.time;
+                  const t = exc?.overrideTime || base;
+                  dayEvs.push({ time:t, text:act.name+(act.place?' · '+act.place:''), color });
+                });
+              });
+            });
+            dayEvs.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+            if (dayEvs.length > 0) rows.push({ ...day, evs:dayEvs });
+          });
+          if (rows.length === 0) return null;
+          return (
+            <>
+              <div className="card-title" style={{marginTop:8,display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+                <span>אירועים קרובים</span>
+                <span style={{fontFamily:'Geist Mono, monospace',fontSize:11,letterSpacing:'.12em',color:'var(--ink-3)'}}>7 DAYS</span>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {rows.map((day,di) => (
+                  <div key={di} style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+                    <div style={{minWidth:52,textAlign:'center',paddingTop:2,flexShrink:0}}>
+                      <div style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:13,color:'var(--ink-1)',fontWeight:day.daysAway===1?600:400}}>{day.label}</div>
+                      <div style={{fontFamily:'Geist Mono, monospace',fontSize:10,color:'var(--ink-3)',letterSpacing:'.04em'}}>{day.dateStr}</div>
+                    </div>
+                    <div style={{flex:1,display:'flex',flexDirection:'column',gap:3}}>
+                      {day.evs.map((ev,ei) => (
+                        <div key={ei} style={{display:'flex',alignItems:'center',gap:7,padding:'4px 8px',borderRadius:7,background:'rgba(255,255,255,.025)'}}>
+                          <span style={{fontFamily:'Geist Mono, monospace',fontSize:11,color:ev.color,minWidth:34,direction:'ltr'}}>{ev.time}</span>
+                          <span style={{width:5,height:5,borderRadius:'50%',background:ev.color,flexShrink:0}}/>
+                          <span style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:14,color:'var(--ink-0)',flex:1}}>{ev.text}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-                ));
-              })()}
-            </div>
-          </>
-        )}
+                ))}
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       {/* Right — Yuval mini */}
@@ -3893,7 +3931,7 @@ function ActivitiesCard({ kidKey, color }) {
       {activities.length === 0 ? (
         <div style={{padding:'24px 16px',textAlign:'center',color:'var(--ink-3)',fontFamily:'Frank Ruhl Libre, serif',fontSize:15,fontStyle:'italic',border:'.5px dashed var(--line)',borderRadius:10}}>לא הוגדרו חוגים עדיין</div>
       ) : (
-        <div style={{display:'flex',flexDirection:'column',gap:5}}>
+        <div style={{display:'flex',flexDirection:'column',gap:5,overflowY:'auto',flex:1,minHeight:0}}>
           {sortedActs.map(act => {
             const isActiveToday = !act.paused && (act.days||[]).includes(todayDow);
             return (
@@ -4033,7 +4071,12 @@ function KidScreen({ kidKey }) {
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:260,overflowY:'auto'}}>
           {sortedLessons.length === 0 ? (
-            <div style={{padding:'30px 20px',textAlign:'center',color:'var(--ink-3)',fontFamily:'Frank Ruhl Libre, serif',fontSize:16,fontStyle:'italic'}}>אין שיעורים ביום זה</div>
+            <div style={{padding:'24px 20px',textAlign:'center',color:'var(--ink-3)',fontFamily:'Frank Ruhl Libre, serif',fontSize:15}}>
+              {Object.keys(kid.weeklyPlan||{}).length === 0
+                ? <><span>אין נתוני מערכת — </span><span style={{fontFamily:'Geist Mono, monospace',fontSize:12}}>הרץ את הסקרייפר ועדכן webtop_data.json</span></>
+                : <span style={{fontStyle:'italic'}}>אין שיעורים ביום זה</span>
+              }
+            </div>
           ) : sortedLessons.map((l,i) => {
             const topic = findTopic(l);
             return (
@@ -4098,7 +4141,7 @@ function KidScreen({ kidKey }) {
           </div>
         </div>
 
-        <div className="card" style={{display:'flex',flexDirection:'column',gap:10,minHeight:0}}>
+        <div className="card" style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflow:'hidden'}}>
           <div className="card-title">מבחן הבא</div>
           {kid.test.days >= 0 ? (
             <div className={`test-pill ${kid.test.urgent?'urgent':''}`} style={{padding:'20px 16px'}}>
@@ -4116,7 +4159,7 @@ function KidScreen({ kidKey }) {
               אין מבחן קרוב
             </div>
           )}
-          <div style={{marginTop:10}}><ActivitiesCard key={kidKey} kidKey={kidKey} color={kidKey==='ron'?'var(--ron)':'var(--yuval)'}/></div>
+          <div style={{marginTop:10,overflowY:'auto',flex:1,minHeight:0}}><ActivitiesCard key={kidKey} kidKey={kidKey} color={kidKey==='ron'?'var(--ron)':'var(--yuval)'}/></div>
         </div>
       </div>
     </div>
@@ -4861,8 +4904,8 @@ function renderWhenReady() {
       shabbat: { candleLighting: '--:--', havdalah: '--:--', parasha: '', daysAway: 0, todayIs: 'other' },
       briefing: [{ type: 'text', value: 'בוקר טוב למשפחה!' }],
       todayEvents: [], tomorrowEvents: [], calendarEvents: [], week: [], events: [], notes: [], photos: [], shopping: [], recipes: [], recipeCats: [],
-      ron: { name: 'רון', initial: 'ר', grade: 'כיתה ו׳', en: 'GRADE 6', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:-1}, lessonEvents: [], weeklyPlan: [] },
-      yuval: { name: 'יובל', initial: 'י', grade: 'כיתה ב׳', en: 'GRADE 2', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:-1}, lessonEvents: [], weeklyPlan: [] },
+      ron: { name: 'רון', initial: 'ר', grade: 'כיתה ו׳', en: 'GRADE 6', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:-1}, lessonEvents: [], weeklyPlan: {}, weeklyTopics: {} },
+      yuval: { name: 'יובל', initial: 'י', grade: 'כיתה ב׳', en: 'GRADE 2', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:-1}, lessonEvents: [], weeklyPlan: {}, weeklyTopics: {} },
       presence: [], holiday: null, history: { year: '', text: '' },
     };
   }
