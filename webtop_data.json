@@ -577,7 +577,7 @@
           "unread": false
         }
       ],
-      "last_updated": "2026-05-23T14:55:07.733874",
+      "last_updated": "2026-05-23T16:02:33.059422",
       "error": null,
       "_schedule_debug": "days=6, lessons=30, skipped=0"
     },
@@ -1317,11 +1317,23 @@
           "unread": false
         }
       ],
-      "last_updated": "2026-05-23T14:56:48.439286",
+      "last_updated": "2026-05-23T16:04:11.742107",
       "error": null,
       "_schedule_debug": "days=6, lessons=37, skipped=0"
     }
   ],
-  "generated_at": "2026-05-23T14:54:57.764140",
-  "status": "ok"
+  "generated_at": "2026-05-23T16:02:31.432122",
+  "status": "ok",
+  "calendar_events": [
+    {
+      "summary": "בדיקה",
+      "location": "",
+      "all_day": false,
+      "start_iso": "2026-05-23T14:00:00",
+      "end_iso": "2026-05-23T15:00:00",
+      "days_away": 0,
+      "date_heb": "23 במאי",
+      "time": "14:00"
+    }
+  ]
 }

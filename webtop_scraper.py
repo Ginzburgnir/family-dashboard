@@ -1,5 +1,5 @@
 import asyncio, json, argparse, sys, re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 try:
@@ -10,7 +10,98 @@ except ImportError:
 BASE        = "https://webtop.smartschool.co.il"
 OUTPUT_FILE = Path(__file__).parent / "webtop_data.json"
 
+# ── Google Calendar (כתובת סודית) ────────────────────────────
+GCAL_ICS_URL = "https://calendar.google.com/calendar/ical/61ddedeb6c7b1a0696a7c38c7d650c1cd056960b195c98ff4d0a43d66c2b6acf%40group.calendar.google.com/private-054cd130400f4006319a75af38891c9b/basic.ics"
+
 DAYS = {0:"ראשון",1:"שני",2:"שלישי",3:"רביעי",4:"חמישי",5:"שישי",6:"שבת"}
+
+# ── Google Calendar helpers ───────────────────────────────────
+def _unescape_ics(v):
+    return v.replace('\\n',' ').replace('\\,',',').replace('\\;',';').replace('\\\\','\\').strip()
+
+def _parse_ics_date(val):
+    val = val.strip().replace('Z','')
+    try:
+        if 'T' in val:
+            return datetime.strptime(val[:15], '%Y%m%dT%H%M%S')
+        else:
+            return datetime.strptime(val[:8], '%Y%m%d')
+    except Exception:
+        return None
+
+def parse_ics(text):
+    """Parse iCal text → list of event dicts."""
+    # Unfold lines (CRLF + whitespace = continuation)
+    text = text.replace('\r\n','\n').replace('\r','\n')
+    text = re.sub(r'\n[ \t]', '', text)
+    events, evt = [], None
+    for line in text.split('\n'):
+        if line == 'BEGIN:VEVENT':
+            evt = {}
+        elif line == 'END:VEVENT':
+            if evt and evt.get('summary') and evt.get('start') and not evt.get('cancelled'):
+                events.append(evt)
+            evt = None
+        elif evt is not None:
+            if ':' not in line:
+                continue
+            raw_key, _, val = line.partition(':')
+            key = raw_key.split(';')[0].upper()
+            val = val.strip()
+            if   key == 'SUMMARY':     evt['summary']     = _unescape_ics(val)
+            elif key == 'LOCATION':    evt['location']    = _unescape_ics(val)
+            elif key == 'DESCRIPTION': evt['description'] = _unescape_ics(val)[:400]
+            elif key == 'DTSTART':
+                evt['start']   = _parse_ics_date(val)
+                evt['all_day'] = 'T' not in val
+            elif key == 'DTEND':
+                evt['end'] = _parse_ics_date(val)
+            elif key == 'STATUS' and val.upper() == 'CANCELLED':
+                evt['cancelled'] = True
+    return events
+
+def fetch_calendar(url=GCAL_ICS_URL, days_ahead=90):
+    """Fetch & parse Google Calendar iCal. Returns list of event dicts."""
+    if not url:
+        return []
+    print("  [google calendar]")
+    try:
+        import urllib.request
+        req = urllib.request.Request(url, headers={'User-Agent':'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            ics_text = r.read().decode('utf-8', errors='ignore')
+    except Exception as e:
+        print(f"  -> fetch error: {e}")
+        return []
+
+    events = parse_ics(ics_text)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    cutoff = today + timedelta(days=days_ahead)
+
+    result = []
+    for ev in events:
+        s = ev.get('start')
+        if not s:
+            continue
+        if s < today or s > cutoff:
+            continue
+        days_away = (s.replace(hour=0,minute=0,second=0) - today).days
+        heb_months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני',
+                      'יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+        result.append({
+            "summary":   ev.get('summary',''),
+            "location":  ev.get('location',''),
+            "all_day":   ev.get('all_day', True),
+            "start_iso": s.isoformat(),
+            "end_iso":   ev['end'].isoformat() if ev.get('end') else '',
+            "days_away": days_away,
+            "date_heb":  f"{s.day} ב{heb_months[s.month-1]}",
+            "time":      '' if ev.get('all_day') else s.strftime('%H:%M'),
+        })
+
+    result.sort(key=lambda e: e['start_iso'])
+    print(f"  -> {len(result)} events in next {days_ahead} days")
+    return result
 
 async def wait_angular(page, timeout=15000):
     try:
@@ -722,9 +813,14 @@ async def main():
             s2 = await scrape_student(browser, args.u2, args.p2, args.n2)
             result["students"].append(s2)
         await browser.close()
+
+    # ── Google Calendar ──────────────────────────────────────
+    result["calendar_events"] = fetch_calendar()
+
     with open(OUTPUT_FILE,"w",encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
     print(f"\nSaved: {OUTPUT_FILE}")
+    print(f"  📅 Google Calendar: {len(result.get('calendar_events', []))} אירועים")
     for s in result["students"]:
         sched_rows = sum(len(v) for v in s.get('weekly_schedule', {}).values())
         print(f"  {s['name']}: {len(s['weekly_plan'])} plan days | "
