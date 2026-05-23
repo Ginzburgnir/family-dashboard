@@ -2096,26 +2096,21 @@ async function loadFamilyData() {
   data.calendarEvents = [];
   data.calendarStatus = 'from_scraper';
   try {
-    const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const rawEvents = webtop?.calendar_events || [];
     if (rawEvents.length > 0) {
-      // המר start_iso → Date object
       data.calendarEvents = rawEvents
-        .filter(e => e.start_iso)
-        .map(e => ({ ...e, start: new Date(e.start_iso), end: e.end_iso ? new Date(e.end_iso) : null }))
-        .filter(e => e.start >= new Date(todayNorm.getTime() - 1));
+        .filter(e => e.start_iso && e.days_away >= 0)
+        .map(e => ({ ...e, start: new Date(e.start_iso), end: e.end_iso ? new Date(e.end_iso) : null }));
       data.calendarStatus = 'ok:scraper:' + data.calendarEvents.length + ' events';
 
-      // מיזוג ל-data.events (עד 60 יום)
-      const in60 = new Date(today.getTime() + 60*24*60*60*1000);
-      data.calendarEvents.filter(e => e.start <= in60).forEach(e => {
-        const daysAway = Math.max(0, Math.ceil((e.start - todayNorm) / 86400000));
+      data.calendarEvents.filter(e => e.days_away <= 60).forEach(e => {
+        // השתמש ב-days_away מהסקרייפר (מחושב נכון ב-Python) — לא מחשב מחדש ב-JS
         data.events.push({
           id: 'cal-' + e.start_iso,
           kind: 'custom',
           name: e.summary || 'אירוע',
           date: e.date_heb || '',
-          daysAway,
+          daysAway: e.days_away,
           icon: '📅',
           _d: [e.start.getFullYear(), e.start.getMonth()+1, e.start.getDate()],
           location: e.location || '',
