@@ -178,11 +178,12 @@ body { font-family: 'Heebo', system-ui, sans-serif; }
 .home-grid .card { padding: 14px; }
 .home-grid .kid-mini {
   gap: 10px;
-  overflow-y: auto;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,.18) transparent;
-  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 22px), transparent);
-          mask: linear-gradient(180deg, #000 calc(100% - 22px), transparent);
+  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 28px), transparent);
+          mask: linear-gradient(180deg, #000 calc(100% - 28px), transparent);
   scroll-snap-type: y proximity;
   position: relative;
 }
@@ -344,23 +345,24 @@ body { font-family: 'Heebo', system-ui, sans-serif; }
 .today-card { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 
 .briefing {
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(var(--orb-a),.10), rgba(var(--orb-b),.05));
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(var(--orb-a),.12), rgba(var(--orb-b),.06));
   border: .5px solid var(--line-2);
   position: relative; overflow: hidden;
+  flex-shrink: 0;
 }
 .briefing .ai-tag {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 7px;
   font-family: 'Geist Mono', monospace;
-  font-size: 11.5px; letter-spacing: .14em; color: var(--ink-2);
+  font-size: 10px; letter-spacing: .14em; color: var(--ink-2);
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 7px;
 }
 .briefing .ai-tag .dot {
-  width: 7px; height: 7px; border-radius: 50%;
+  width: 6px; height: 6px; border-radius: 50%;
   background: var(--good);
-  box-shadow: 0 0 8px var(--good);
+  box-shadow: 0 0 7px var(--good);
   animation: pulse 2s infinite;
 }
 @keyframes pulse {
@@ -369,7 +371,7 @@ body { font-family: 'Heebo', system-ui, sans-serif; }
 }
 .briefing-text {
   font-family: 'Frank Ruhl Libre', serif;
-  font-size: 22px; line-height: 1.45;
+  font-size: 17px; line-height: 1.55;
   color: var(--ink-0);
 }
 .briefing-text .ron { color: var(--ron); font-weight: 500; }
@@ -2090,25 +2092,26 @@ async function loadFamilyData() {
   data.events = [...staticEvents, ...birthdayEvents];
   data.events.sort((a,b) => a.daysAway - b.daysAway);
 
-  // ── 7b. Google Calendar events ────────────────────────────
+    // ── 7b. Google Calendar events ────────────────────────────
   data.calendarEvents = [];
+  data.calendarStatus = 'loading';
   try {
     let icsText = null;
+    let fetchedFrom = null;
     const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     for (const url of GCAL_URLS) {
       if (icsText) break;
-      // Try direct, then two CORS proxies
       const attempts = [
-        url,
-        `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        { src:'direct', url },
+        { src:'corsproxy', url:`https://corsproxy.io/?url=${encodeURIComponent(url)}` },
+        { src:'allorigins', url:`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
       ];
       for (const attempt of attempts) {
         try {
-          const r = await fetch(attempt);
+          const r = await fetch(attempt.url);
           if (r.ok) {
             const t = await r.text();
-            if (t.includes('BEGIN:VCALENDAR')) { icsText = t; break; }
+            if (t.includes('BEGIN:VCALENDAR')) { icsText = t; fetchedFrom = attempt.src; break; }
           }
         } catch(e) {}
       }
@@ -2119,35 +2122,32 @@ async function loadFamilyData() {
       data.calendarEvents = parsed
         .filter(e => e.start && e.start >= new Date(todayNorm.getTime() - 1) && e.start <= in60)
         .sort((a,b) => a.start - b.start);
-
-      // Merge upcoming calendar events into data.events (next 30 days)
+      data.calendarStatus = 'ok:' + fetchedFrom + ':' + data.calendarEvents.length + ' events';
       const in30 = new Date(today.getTime() + 30*24*60*60*1000);
-      data.calendarEvents
-        .filter(e => e.start <= in30)
-        .forEach(e => {
-          const daysAway = Math.ceil((e.start - todayNorm) / 86400000);
-          const d = e.start;
-          const dateStr = `${d.getDate()} ב${['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][d.getMonth()]}`;
-          data.events.push({
-            id: 'cal-' + e.start.getTime() + '-' + (e.summary||'').slice(0,10),
-            kind: 'custom',
-            name: e.summary || 'אירוע',
-            date: dateStr,
-            daysAway: Math.max(0, daysAway),
-            icon: '📅',
-            _d: [d.getFullYear(), d.getMonth()+1, d.getDate()],
-            location: e.location || '',
-            allDay: e.allDay,
-            startTime: e.allDay ? '' : `${String(e.start.getHours()).padStart(2,'0')}:${String(e.start.getMinutes()).padStart(2,'0')}`,
-          });
+      data.calendarEvents.filter(e => e.start <= in30).forEach(e => {
+        const daysAway = Math.ceil((e.start - todayNorm) / 86400000);
+        const d = e.start;
+        const dateStr = `${d.getDate()} ב${['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][d.getMonth()]}`;
+        data.events.push({
+          id: 'cal-' + e.start.getTime() + '-' + (e.summary||'').slice(0,10),
+          kind: 'custom', name: e.summary||'אירוע', date: dateStr,
+          daysAway: Math.max(0, daysAway), icon: '📅',
+          _d: [d.getFullYear(), d.getMonth()+1, d.getDate()],
+          location: e.location||'', allDay: e.allDay,
+          startTime: e.allDay ? '' : String(e.start.getHours()).padStart(2,'0')+':'+String(e.start.getMinutes()).padStart(2,'0'),
         });
+      });
       data.events.sort((a,b) => a.daysAway - b.daysAway);
+    } else {
+      data.calendarStatus = 'failed:no ics';
+      console.warn('[gcal] All fetch attempts failed');
     }
   } catch(e) {
+    data.calendarStatus = 'error:' + e.message;
     console.warn('gcal error', e);
   }
 
-  // ── 5. Today events (school + family events) ─────
+    // ── 5. Today events (school + family events) ─────
   // Build per-kid + family lists. Skip school if today has no school or if school day is over.
   const todayEvents = [];
   const dow = DOW;
@@ -2295,23 +2295,82 @@ async function loadFamilyData() {
   // ── 6. Briefing ──────────────────────────────────────────
   const hw_yuval = data.yuval.homework.filter(h => !h.done);
   const hw_ron = data.ron.homework.filter(h => !h.done);
-  const briefing = [{ type: 'text', value: 'בוקר טוב. ' }];
-  // Birthday today gets first mention
+  const briefing = [];
+  const todayDow = DOW;
+  const DAY_NAMES_BRIEF = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+
+  // Greeting by time
+  const hour = today.getHours();
+  const greeting = hour < 12 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : 'ערב טוב';
+  briefing.push({ type:'text', value: greeting + ' משפחת גינזבורג. ' });
+
+  // Birthday today
   const bdToday = data.events.find(e => e.kind === 'birthday' && e.daysAway === 0);
-  if (bdToday) {
-    briefing.push({ type: 'text', value: '🎂 היום יום הולדת ' + bdToday.shortName + '! ' });
+  if (bdToday) briefing.push({ type:'text', value:'🎂 היום יום הולדת ' + bdToday.name.replace('יום הולדת ','') + '! ' });
+
+  // Calendar event today
+  const calToday = data.events.find(e => e.kind === 'custom' && e.daysAway === 0);
+  if (calToday) briefing.push({ type:'text', value:'📅 ' + calToday.name + '. ' });
+
+  // Day-specific context
+  if (todayDow === 6) {
+    briefing.push({ type:'text', value:'שבת שלום! ' });
+  } else if (todayDow === 5) {
+    briefing.push({ type:'text', value:'שישי — יום קצר. ' });
   }
+
+  // Homework
   if (hw_ron.length > 0) {
-    briefing.push({ type: 'ron', value: 'לרון ' + hw_ron.length + ' שיעורי בית' });
-    briefing.push({ type: 'text', value: '. ' });
+    briefing.push({ type:'ron', value:'לרון ' + hw_ron.length + ' שיעורי בית' });
+    briefing.push({ type:'text', value:'. ' });
   }
   if (hw_yuval.length > 0) {
-    briefing.push({ type: 'yuval', value: 'ליובל ' + hw_yuval.length + ' שיעורי בית' });
-    briefing.push({ type: 'text', value: '. ' });
+    briefing.push({ type:'yuval', value:'ליובל ' + hw_yuval.length + ' שיעורי בית' });
+    briefing.push({ type:'text', value:'. ' });
   }
-  if (briefing.length === 1) {
-    briefing.push({ type: 'text', value: 'יום נעים למשפחה!' });
+
+  // Tests soon
+  if (data.ron.test && data.ron.test.days >= 0 && data.ron.test.days <= 3) {
+    const d = data.ron.test.days;
+    briefing.push({ type:'text', value: d===0 ? '⚠ לרון מבחן ' + data.ron.test.subj + ' היום! ' : `⚠ לרון מבחן ${data.ron.test.subj} בעוד ${d} ימים. ` });
   }
+  if (data.yuval.test && data.yuval.test.days >= 0 && data.yuval.test.days <= 3) {
+    const d = data.yuval.test.days;
+    briefing.push({ type:'text', value: d===0 ? '⚠ ליובל מבחן ' + data.yuval.test.subj + ' היום! ' : `⚠ ליובל מבחן ${data.yuval.test.subj} בעוד ${d} ימים. ` });
+  }
+
+  // Activities today (from localStorage)
+  try {
+    const allActs = JSON.parse(localStorage.getItem('fd_activities_v2')||'{}');
+    const todayWeekKeyB = getWeekKey(today);
+    const allExcsB = JSON.parse(localStorage.getItem('fd_exceptions_v2')||'{}');
+    const todayActNames = [];
+    [['ron','רון'],['yuval','יובל'],['yahav','יהב']].forEach(([key,label]) => {
+      (allActs[key]||[]).filter(a=>!a.paused).forEach(act => {
+        (act.days||[]).forEach(origDay => {
+          const exc = (allExcsB[key]||[]).find(e=>e.actId===act.id&&e.weekKey===todayWeekKeyB&&e.origDay===origDay);
+          if (exc?.cancelled) return;
+          const effDay = exc?.overrideDay!=null ? exc.overrideDay : origDay;
+          if (effDay === todayDow) todayActNames.push(label + ': ' + act.name);
+        });
+      });
+    });
+    if (todayActNames.length > 0) briefing.push({ type:'text', value:'🏃 חוגים היום — ' + todayActNames.join(', ') + '. ' });
+  } catch(e){}
+
+  // Upcoming event in 1-2 days
+  const upcoming = data.events.find(e => e.daysAway >= 1 && e.daysAway <= 2 && (e.kind === 'custom' || e.kind === 'birthday'));
+  if (upcoming) {
+    const when = upcoming.daysAway === 1 ? 'מחר' : 'מחרתיים';
+    briefing.push({ type:'text', value:`📌 ${when}: ${upcoming.name}. ` });
+  }
+
+  // Weather tip (if already loaded)
+  if (data.weather && data.weather.tip) {
+    briefing.push({ type:'text', value: data.weather.tip });
+  }
+
+  if (briefing.length <= 1) briefing.push({ type:'text', value:'יום נעים למשפחה! 🌟' });
   data.briefing = briefing;
 
   // Next holiday for holiday card
@@ -4101,31 +4160,47 @@ function KidScreen({ kidKey }) {
         </div>
       </div>
 
-      {/* 3 columns: homework, lesson events, test */}
+      {/* 3 columns: homework+test | lesson events | activities */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,flex:1,minHeight:0}}>
+
+        {/* Col 1: שיעורי בית + מבחן (קומפקטי) */}
         <div className="card" style={{display:'flex',flexDirection:'column',gap:10,minHeight:0}}>
           <div className="card-title">שיעורי בית ({kid.homework.length})</div>
-          <div style={{display:'flex',flexDirection:'column',gap:6,overflowY:'auto'}}>
+          <div style={{display:'flex',flexDirection:'column',gap:6,overflowY:'auto',flex:1,minHeight:0}}>
             {kid.homework.length === 0 ? (
               <div style={{color:'var(--ink-3)',fontFamily:'Frank Ruhl Libre, serif',fontSize:15,fontStyle:'italic',padding:'10px'}}>אין שיעורי בית</div>
             ) : kid.homework.map((h,i) => (
-              <div key={i} className={`item ${h.done?'done':''}`} style={{display:'flex',alignItems:'flex-start',gap:9,padding:'10px 12px',background:'rgba(255,255,255,.025)',borderRadius:10,fontSize:15,fontFamily:'Frank Ruhl Libre, serif'}}>
-                <div className={`check ${h.done?'done':''}`} style={{marginTop:3}}/>
+              <div key={i} className={`item ${h.done?'done':''}`} style={{display:'flex',alignItems:'flex-start',gap:9,padding:'8px 12px',background:'rgba(255,255,255,.025)',borderRadius:10,fontSize:14,fontFamily:'Frank Ruhl Libre, serif'}}>
+                <div className={`check ${h.done?'done':''}`} style={{marginTop:2}}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
-                    <span className="subj">{h.subj}</span>
+                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                    <span className="subj" style={{fontSize:13}}>{h.subj}</span>
                     {h.date && <span style={{fontFamily:'Geist Mono, monospace',fontSize:10,color:'var(--ink-3)',direction:'ltr'}}>{h.date}</span>}
                   </div>
-                  <div style={{color:'var(--ink-1)'}}>{h.text}</div>
+                  <div style={{color:'var(--ink-1)',fontSize:13}}>{h.text}</div>
                 </div>
               </div>
             ))}
           </div>
+          {/* מבחן הבא — קומפקטי */}
+          {kid.test.days >= 0 && (
+            <div style={{marginTop:4,padding:'10px 12px',borderRadius:12,background:kid.test.urgent?'rgba(255,80,80,.08)':'rgba(255,255,255,.03)',border:'.5px solid '+(kid.test.urgent?'rgba(255,80,80,.3)':'var(--line)'),display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+              <div style={{textAlign:'center',minWidth:36}}>
+                <div style={{fontFamily:'Geist Mono, monospace',fontSize:22,fontWeight:700,color:kid.test.urgent?'#ff8080':'var(--ink-0)',lineHeight:1}}>{kid.test.days===0?'!':kid.test.days}</div>
+                <div style={{fontFamily:'Geist Mono, monospace',fontSize:9,color:'var(--ink-3)',letterSpacing:'.08em'}}>{kid.test.days===0?'היום':'ימים'}</div>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:13,fontWeight:600,color:'var(--ink-0)'}}>⚠ {kid.test.subj}</div>
+                {kid.test.topic && <div style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:12,color:'var(--ink-2)'}}>{kid.test.topic}</div>}
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Col 2: אירועי שיעור */}
         <div className="card" style={{display:'flex',flexDirection:'column',gap:10,minHeight:0}}>
           <div className="card-title">אירועי שיעור ({kid.lessonEvents.length})</div>
-          <div style={{display:'flex',flexDirection:'column',gap:6,overflowY:'auto'}}>
+          <div style={{display:'flex',flexDirection:'column',gap:6,overflowY:'auto',flex:1,minHeight:0}}>
             {kid.lessonEvents.length === 0 ? (
               <div style={{color:'var(--ink-3)',fontFamily:'Frank Ruhl Libre, serif',fontSize:15,fontStyle:'italic',padding:'10px'}}>אין אירועים</div>
             ) : kid.lessonEvents.map((e,i) => (
@@ -4141,26 +4216,11 @@ function KidScreen({ kidKey }) {
           </div>
         </div>
 
-        <div className="card" style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflow:'hidden'}}>
-          <div className="card-title">מבחן הבא</div>
-          {kid.test.days >= 0 ? (
-            <div className={`test-pill ${kid.test.urgent?'urgent':''}`} style={{padding:'20px 16px'}}>
-              <div className="test-days" style={{minWidth:70}}>
-                <div className="n" style={{fontSize:42}}>{kid.test.days === 0 ? 'היום' : kid.test.days}</div>
-                {kid.test.days > 0 && <div className="l">ימים</div>}
-              </div>
-              <div className="test-info">
-                <div className="s" style={{fontSize:18}}>⚠ {kid.test.subj}</div>
-                <div className="t" style={{fontSize:14}}>{kid.test.topic}</div>
-              </div>
-            </div>
-          ) : (
-            <div style={{padding:'24px 16px', borderRadius:14, background:'rgba(255,255,255,.02)', border:'.5px solid var(--line)', color:'var(--ink-3)', fontFamily:'Frank Ruhl Libre, serif', fontSize:16, textAlign:'center', fontStyle:'italic'}}>
-              אין מבחן קרוב
-            </div>
-          )}
-          <div style={{marginTop:10,overflowY:'auto',flex:1,minHeight:0}}><ActivitiesCard key={kidKey} kidKey={kidKey} color={kidKey==='ron'?'var(--ron)':'var(--yuval)'}/></div>
+        {/* Col 3: חוגים בלבד — עמודה שלמה */}
+        <div className="card" style={{display:'flex',flexDirection:'column',minHeight:0,overflow:'hidden'}}>
+          <ActivitiesCard key={kidKey} kidKey={kidKey} color={kidKey==='ron'?'var(--ron)':'var(--yuval)'}/>
         </div>
+
       </div>
     </div>
   );
@@ -4180,7 +4240,14 @@ function ScheduleScreen({ pinnedIds, togglePin }) {
       <div className="screen-head">
         <div>
           <div className="screen-h1">לוח השבוע</div>
-          <div className="screen-sub" style={{marginTop:6}}>WEEK 20 · MAY 10—16, 2026</div>
+          <div className="screen-sub" style={{marginTop:6}}>{(() => {
+            const now = new Date();
+            const sun = new Date(now); sun.setDate(now.getDate() - now.getDay());
+            const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
+            const mn = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            const wn = Math.ceil((((now - new Date(now.getFullYear(),0,1))/86400000)+1)/7);
+            return `WEEK ${wn} · ${mn[sun.getMonth()]} ${sun.getDate()}–${sat.getDate()}, ${sat.getFullYear()}`;
+          })()}</div>
         </div>
         <div className="dock-inner" style={{padding:4}}>
           <div className={`dock-tab ${view==='week'?'active':''}`} onClick={()=>setView('week')} style={{padding:'8px 14px',fontSize:12}}>
@@ -4512,16 +4579,22 @@ function KidDetail({ kid, kidKey }) {
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:18,flex:1,minHeight:0}}>
         <div>
-          <div className="card-title" style={{marginBottom:10}}>שאר היום</div>
-          <div className="next-list">
-            {kid.next.map((n,i) => (
-              <div key={i} className="next-row" style={{padding:'10px 12px'}}>
-                <span className="t">{n.time}</span>
-                <span className="n" style={{fontSize:14}}>{n.name}</span>
-                <span className="r">{n.room}</span>
-              </div>
-            ))}
+          <div className="card-title" style={{marginBottom:10}}>
+            {kid.nextDayLabel ? kid.nextDayLabel : 'שאר היום'}
           </div>
+          {kid.next.length === 0 ? (
+            <div style={{color:'var(--ink-3)',fontFamily:'Frank Ruhl Libre, serif',fontSize:14,fontStyle:'italic',padding:'8px'}}>אין שיעורים</div>
+          ) : (
+            <div className="next-list">
+              {kid.next.map((n,i) => (
+                <div key={i} className="next-row" style={{padding:'10px 12px'}}>
+                  <span className="t">{n.time}</span>
+                  <span className="n" style={{fontSize:14}}>{n.name}</span>
+                  <span className="r">{n.room}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
