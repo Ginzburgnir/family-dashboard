@@ -1452,6 +1452,11 @@ html[data-theme="light"] .cd-bar { background: rgba(26,24,20,.08); }
   background: rgba(180,140,255,.12); color: #c4a0ff;
   border: .5px solid rgba(180,140,255,.3);
 }
+.event-row .ev-tag.calendar {
+  background: rgba(66,133,244,.12); color: #7ab3f8;
+  border: .5px solid rgba(66,133,244,.3);
+}
+.tg-row.calendar .tg-time { color: #7ab3f8; }
 
 /* Countdown pin button */
 .cd-pin {
@@ -1632,7 +1637,54 @@ window.onerror = function(msg, src, line, col, err) {
 
 <!-- ─── Real Data Loader ──────────────────────────────────────── -->
 <script>
-window.FAMILY_LOADING = true;
+// ── iCal parser ──────────────────────────────────────────────
+const GCAL_URLS = [
+  // לוח המשפחה המשותף — לעדכן כאן אם ה-URL ישתנה
+  'https://calendar.google.com/calendar/ical/61ddedeb6c7b1a0696a7c38c7d650c1cd056960b195c98ff4d0a43d66c2b6acf%40group.calendar.google.com/public/basic.ics',
+];
+
+function unescapeICS(v) {
+  return v.replace(/\\n/g,' ').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').trim();
+}
+function parseICSDate(val) {
+  const s = val.replace('Z','').replace(/[^0-9T]/g,''); // strip tzid noise
+  if (s.length >= 8) {
+    const y=+s.slice(0,4), mo=+s.slice(4,6)-1, d=+s.slice(6,8);
+    if (s.includes('T') && s.length >= 13) {
+      return new Date(y, mo, d, +s.slice(9,11), +s.slice(11,13), 0);
+    }
+    return new Date(y, mo, d);
+  }
+  return null;
+}
+function parseICS(text) {
+  // Unfold lines (CRLF + whitespace = continuation)
+  const raw = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,'');
+  const lines = raw.split('\n');
+  const events = [];
+  let evt = null;
+  for (const line of lines) {
+    if (line === 'BEGIN:VEVENT') { evt = {}; continue; }
+    if (line === 'END:VEVENT') {
+      if (evt && evt.summary && evt.start && !evt.cancelled) events.push(evt);
+      evt = null; continue;
+    }
+    if (!evt) continue;
+    const ci = line.indexOf(':');
+    if (ci < 0) continue;
+    const rawKey = line.slice(0, ci).toUpperCase();
+    const val = line.slice(ci+1);
+    // Strip property params (e.g. DTSTART;TZID=Asia/Jerusalem → DTSTART)
+    const key = rawKey.split(';')[0];
+    if (key === 'SUMMARY') evt.summary = unescapeICS(val);
+    else if (key === 'DESCRIPTION') evt.description = unescapeICS(val);
+    else if (key === 'LOCATION') evt.location = unescapeICS(val);
+    else if (key === 'DTSTART') { evt.start = parseICSDate(val); evt.allDay = !val.includes('T'); }
+    else if (key === 'DTEND')   { evt.end   = parseICSDate(val); }
+    else if (key === 'STATUS' && val.trim().toUpperCase() === 'CANCELLED') evt.cancelled = true;
+  }
+  return events;
+}
 
 async function loadFamilyData() {
   const today = new Date();
@@ -2038,6 +2090,63 @@ async function loadFamilyData() {
   data.events = [...staticEvents, ...birthdayEvents];
   data.events.sort((a,b) => a.daysAway - b.daysAway);
 
+  // ── 7b. Google Calendar events ────────────────────────────
+  data.calendarEvents = [];
+  try {
+    let icsText = null;
+    const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    for (const url of GCAL_URLS) {
+      if (icsText) break;
+      // Try direct, then two CORS proxies
+      const attempts = [
+        url,
+        `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      ];
+      for (const attempt of attempts) {
+        try {
+          const r = await fetch(attempt);
+          if (r.ok) {
+            const t = await r.text();
+            if (t.includes('BEGIN:VCALENDAR')) { icsText = t; break; }
+          }
+        } catch(e) {}
+      }
+    }
+    if (icsText) {
+      const parsed = parseICS(icsText);
+      const in60 = new Date(today.getTime() + 60*24*60*60*1000);
+      data.calendarEvents = parsed
+        .filter(e => e.start && e.start >= new Date(todayNorm.getTime() - 1) && e.start <= in60)
+        .sort((a,b) => a.start - b.start);
+
+      // Merge upcoming calendar events into data.events (next 30 days)
+      const in30 = new Date(today.getTime() + 30*24*60*60*1000);
+      data.calendarEvents
+        .filter(e => e.start <= in30)
+        .forEach(e => {
+          const daysAway = Math.ceil((e.start - todayNorm) / 86400000);
+          const d = e.start;
+          const dateStr = `${d.getDate()} ב${['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][d.getMonth()]}`;
+          data.events.push({
+            id: 'cal-' + e.start.getTime() + '-' + (e.summary||'').slice(0,10),
+            kind: 'custom',
+            name: e.summary || 'אירוע',
+            date: dateStr,
+            daysAway: Math.max(0, daysAway),
+            icon: '📅',
+            _d: [d.getFullYear(), d.getMonth()+1, d.getDate()],
+            location: e.location || '',
+            allDay: e.allDay,
+            startTime: e.allDay ? '' : `${String(e.start.getHours()).padStart(2,'0')}:${String(e.start.getMinutes()).padStart(2,'0')}`,
+          });
+        });
+      data.events.sort((a,b) => a.daysAway - b.daysAway);
+    }
+  } catch(e) {
+    console.warn('gcal error', e);
+  }
+
   // ── 5. Today events (school + family events) ─────
   // Build per-kid + family lists. Skip school if today has no school or if school day is over.
   const todayEvents = [];
@@ -2102,20 +2211,27 @@ async function loadFamilyData() {
     });
   } catch(e) {}
 
-  // Family events: today + upcoming within 14 days (birthdays, holidays, vacations)
+  // Family events: today + upcoming within 14 days (birthdays, holidays, vacations, calendar)
   data.events.forEach(ev => {
     if (ev.daysAway === 0) {
+      const isCalendar = ev.kind === 'custom';
+      const timeLabel = isCalendar && ev.startTime ? ev.startTime : '📅';
+      const startMin = isCalendar && ev.startTime
+        ? parseInt(ev.startTime.split(':')[0])*60 + parseInt(ev.startTime.split(':')[1]||0)
+        : 1;
       todayEvents.push({
-        who: 'family', time: '🎉', text: ev.name,
-        tag: ev.kind === 'birthday' ? 'birthday' : 'holiday',
-        state: 'now', _min: 0,
+        who: 'family',
+        time: isCalendar ? timeLabel : '🎉',
+        text: ev.name + (ev.location ? ' · ' + ev.location : ''),
+        tag: ev.kind === 'birthday' ? 'birthday' : isCalendar ? 'calendar' : 'holiday',
+        state: 'now', _min: startMin,
       });
-    } else if (ev.daysAway > 0 && ev.daysAway <= 14 && (ev.kind === 'birthday' || ev.kind === 'holiday' || ev.kind === 'vacation')) {
+    } else if (ev.daysAway > 0 && ev.daysAway <= 14 && (ev.kind === 'birthday' || ev.kind === 'holiday' || ev.kind === 'vacation' || ev.kind === 'custom')) {
       const label = ev.daysAway === 1 ? 'מחר' : 'בעוד ' + ev.daysAway;
       todayEvents.push({
         who: 'family', time: label, text: ev.icon + ' ' + ev.name,
-        tag: ev.kind === 'birthday' ? 'birthday' : 'holiday',
-        state: 'future', _min: 24*60 + ev.daysAway,  // sort to end
+        tag: ev.kind === 'birthday' ? 'birthday' : ev.kind === 'custom' ? 'calendar' : 'holiday',
+        state: 'future', _min: 24*60 + ev.daysAway,
       });
     }
   });
@@ -2170,7 +2286,7 @@ async function loadFamilyData() {
   // Tomorrow family events
   data.events.forEach(ev => {
     if (ev.daysAway === 1) {
-      tomorrowEvents.push({ who:'family', time:ev.icon||'🗓', text:ev.name, tag: ev.kind==='birthday'?'birthday':'holiday', _min:0 });
+      tomorrowEvents.push({ who:'family', time:ev.icon||'📅', text:ev.name+(ev.location?' · '+ev.location:''), tag: ev.kind==='birthday'?'birthday': ev.kind==='custom'?'calendar':'holiday', _min: ev.startTime ? parseInt(ev.startTime.split(':')[0])*60+parseInt(ev.startTime.split(':')[1]||0) : 0 });
     }
   });
   tomorrowEvents.sort((a,b) => (a._min??0) - (b._min??0));
@@ -3318,16 +3434,22 @@ function HomeScreen({ now, pinnedIds, togglePin, actTick }) {
         )}
 
         <div className="widget holiday">
-          <span className="w-icon">{F.events.find(e => e.kind === 'vacation').icon}</span>
-          <div style={{flex:1,display:'flex',flexDirection:'column',gap:2}}>
-            <div className="w-label">חופשה הבאה · SCHOOL BREAK</div>
-            <div style={{display:'flex',alignItems:'baseline',gap:8}}>
-              <span className="w-big" style={{fontSize:36}}>{F.events.find(e => e.kind === 'vacation').daysAway}</span>
-              <span style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:15,color:'var(--ink-1)'}}>ימים</span>
-              <span style={{fontFamily:'Geist Mono, monospace',fontSize:10,letterSpacing:'.1em',color:'var(--ink-3)',marginRight:'auto'}}>{F.events.find(e => e.kind === 'vacation').date}</span>
-            </div>
-            <div className="w-title">{F.events.find(e => e.kind === 'vacation').name}</div>
-          </div>
+          {(() => {
+            const nextVac = F.events.find(e => e.kind === 'vacation') || F.events.find(e => e.kind === 'holiday') || null;
+            if (!nextVac) return <div className="w-title" style={{padding:'12px',color:'var(--ink-3)'}}>אין חופשה קרובה</div>;
+            return (<>
+              <span className="w-icon">{nextVac.icon}</span>
+              <div style={{flex:1,display:'flex',flexDirection:'column',gap:2}}>
+                <div className="w-label">חופשה הבאה · SCHOOL BREAK</div>
+                <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+                  <span className="w-big" style={{fontSize:36}}>{nextVac.daysAway}</span>
+                  <span style={{fontFamily:'Frank Ruhl Libre, serif',fontSize:15,color:'var(--ink-1)'}}>ימים</span>
+                  <span style={{fontFamily:'Geist Mono, monospace',fontSize:10,letterSpacing:'.1em',color:'var(--ink-3)',marginRight:'auto'}}>{nextVac.date}</span>
+                </div>
+                <div className="w-title">{nextVac.name}</div>
+              </div>
+            </>);
+          })()}
         </div>
 
         <div className="widget history">
@@ -3343,6 +3465,7 @@ function HomeScreen({ now, pinnedIds, togglePin, actTick }) {
 }
 
 function NextEventWidget({ event }) {
+  if (!event) return null;
   return (
     <div className="widget" style={{
       background: 'radial-gradient(120% 80% at 100% 0%, rgba(255,213,96,.10), transparent 55%), linear-gradient(180deg, var(--glass-2), var(--glass))',
@@ -4737,7 +4860,7 @@ function renderWhenReady() {
       weather: { nowC: '--', feels: '--', humidity: '--', wind: '--', icon: 'sun', desc: '', sunrise: '--:--', sunset: '--:--', today: { hi: '--', lo: '--', icon: 'sun' }, tomorrow: { hi: '--', lo: '--', icon: 'sun' } },
       shabbat: { candleLighting: '--:--', havdalah: '--:--', parasha: '', daysAway: 0, todayIs: 'other' },
       briefing: [{ type: 'text', value: 'בוקר טוב למשפחה!' }],
-      todayEvents: [], tomorrowEvents: [], week: [], events: [], notes: [], photos: [], shopping: [], recipes: [], recipeCats: [],
+      todayEvents: [], tomorrowEvents: [], calendarEvents: [], week: [], events: [], notes: [], photos: [], shopping: [], recipes: [], recipeCats: [],
       ron: { name: 'רון', initial: 'ר', grade: 'כיתה ו׳', en: 'GRADE 6', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:-1}, lessonEvents: [], weeklyPlan: [] },
       yuval: { name: 'יובל', initial: 'י', grade: 'כיתה ב׳', en: 'GRADE 2', now: {time:'--:--',name:'—',room:''}, next: [], homework: [], test: {subj:'',topic:'',days:-1}, lessonEvents: [], weeklyPlan: [] },
       presence: [], holiday: null, history: { year: '', text: '' },
