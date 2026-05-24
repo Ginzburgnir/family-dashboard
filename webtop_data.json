@@ -8,23 +8,12 @@
       "homework": [],
       "messages": [],
       "notifications": [],
-      "last_updated": "2026-05-23T14:57:34.484107",
+      "last_updated": "2026-05-24T06:40:39.479904",
       "error": "login_failed",
       "_schedule_debug": null
     }
   ],
-  "generated_at": "2026-05-23T14:57:33.931776",
+  "generated_at": "2026-05-24T06:40:38.934296",
   "status": "ok",
-  "calendar_events": [
-    {
-      "summary": "בדיקה",
-      "location": "",
-      "all_day": false,
-      "start_iso": "2026-05-23T14:00:00",
-      "end_iso": "2026-05-23T15:00:00",
-      "days_away": 0,
-      "date_heb": "23 במאי",
-      "time": "14:00"
-    }
-  ]
+  "calendar_events": []
 }
